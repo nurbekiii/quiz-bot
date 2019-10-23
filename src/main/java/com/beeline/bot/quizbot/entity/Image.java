@@ -12,40 +12,52 @@ import java.time.LocalDateTime;
 /**
  * @author NIsaev on 01.10.2019
  */
-@JsonIgnoreProperties(ignoreUnknown = true, value = { "created_at", "updated_at"})
+@JsonIgnoreProperties(ignoreUnknown = true, value = { "created_at", "updated_at", "sha256", "provider", "size", "public_id"})
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 public class Image implements Serializable {
-
     private Long id;
     private String name;
 
-    @JsonIgnore
     private String ext;
-
-    @JsonIgnore
     private String mime;
+    private String url;
 
     @JsonIgnore
-    private String url;
+    private String sha256;
+
+    @JsonIgnore
+    private String provider;
+
+    @JsonIgnore
+    private String size;
+
+    @JsonIgnore
+    private String public_id;
 
     @JsonIgnore
     @JsonProperty(value = "created_at")
     private LocalDateTime createdAt;
 
-    @JsonProperty(value = "updated_at")
     @JsonIgnore
+    @JsonProperty(value = "updated_at")
     private LocalDateTime updatedAt;
 
     public Image(){
 
     }
 
-    public Image(Long id, String name, String ext, String mime, String url) {
+    public Image(Long id, String name, String ext, String mime, String url, String sha256, String provider, String size, String public_id, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.name = name;
         this.ext = ext;
         this.mime = mime;
         this.url = url;
+        this.sha256 = sha256;
+        this.provider = provider;
+        this.size = size;
+        this.public_id = public_id;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
 
     public Long getId() {
@@ -102,5 +114,37 @@ public class Image implements Serializable {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getSha256() {
+        return sha256;
+    }
+
+    public void setSha256(String sha256) {
+        this.sha256 = sha256;
+    }
+
+    public String getProvider() {
+        return provider;
+    }
+
+    public void setProvider(String provider) {
+        this.provider = provider;
+    }
+
+    public String getSize() {
+        return size;
+    }
+
+    public void setSize(String size) {
+        this.size = size;
+    }
+
+    public String getPublic_id() {
+        return public_id;
+    }
+
+    public void setPublic_id(String public_id) {
+        this.public_id = public_id;
     }
 }

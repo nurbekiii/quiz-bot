@@ -1,6 +1,7 @@
 package com.beeline.bot.quizbot.service.impl;
 
 import com.beeline.bot.quizbot.entity.Answer;
+import com.beeline.bot.quizbot.entity.TaskFilter;
 import com.beeline.bot.quizbot.service.AnswerService;
 import com.beeline.bot.quizbot.util.FileNameAwareByteArrayResource;
 import com.beeline.bot.quizbot.util.HttpHeadersUtil;
@@ -62,6 +63,7 @@ public class AnswerServiceImpl implements AnswerService {
             form.put("email", answer.getEmail());
             form.put("owner", answer.getOwner());
             form.put("comment", answer.getComment());
+            form.put("point", answer.getPoint());
             form.put("task_category", answer.getTaskCategory());
             form.put("text_answer", answer.getTextAnswer());
             form.put("user_id", answer.getUserId());
@@ -101,7 +103,7 @@ public class AnswerServiceImpl implements AnswerService {
     }
 
     @Override
-    public Answer getUserById(long id) {
+    public Answer getAnswerById(long id) {
         try {
             HttpEntity<Answer> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.GET, null, Answer.class);
             return response.getBody();
@@ -127,5 +129,31 @@ public class AnswerServiceImpl implements AnswerService {
         return null;
     }
 
+    @Override
+    public List<Answer> getAnswersByFilter(TaskFilter filter) {
+        try {
+            String params = formatCriteria(filter);
+
+            HttpEntity<Answer> entity = new HttpEntity<>(null, httpHeadersUtil.getHttpHeadersJson());
+            ResponseEntity<List<Answer>> response = restTemplate.exchange(urlMain + customUrl + "?" + params, HttpMethod.GET, entity, new ParameterizedTypeReference<List<Answer>>() {
+            });
+
+            List<Answer> list = response.getBody();
+            return list;
+        } catch (Exception t) {
+            logger.error(t.toString());
+        }
+        return null;
+    }
+
+    private String formatCriteria(TaskFilter filter) {
+        if(filter.getTask_level() == null &&  filter.getTask_category() == null)
+            return String.format("user_id=%s&_sort=id:DESC", filter.getUser_id());
+
+        if(filter.getTask_level() == null)
+            return String.format("user_id=%s&task_category=%s&_sort=id:DESC", filter.getUser_id(), filter.getTask_category());
+
+        return String.format("user_id=%s&task_level=%s&task_category=%s&_sort=id:DESC", filter.getUser_id(), filter.getTask_level(), filter.getTask_category());
+    }
 
 }

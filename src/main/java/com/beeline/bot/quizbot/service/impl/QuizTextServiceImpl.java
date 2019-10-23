@@ -4,6 +4,7 @@ import com.beeline.bot.quizbot.entity.QuizText;
 import com.beeline.bot.quizbot.entity.User;
 import com.beeline.bot.quizbot.service.QuizTextService;
 import com.beeline.bot.quizbot.service.UserService;
+import com.beeline.bot.quizbot.util.HttpHeadersUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,9 @@ public class QuizTextServiceImpl implements QuizTextService {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Autowired
+    private HttpHeadersUtil httpHeadersUtil;
+
     @Value("${rest.url_main}")
     private String urlMain;
 
@@ -44,7 +48,7 @@ public class QuizTextServiceImpl implements QuizTextService {
     @Override
     public QuizText create(QuizText quiz){
         try {
-            HttpEntity<QuizText> requestEntity = new HttpEntity<>(quiz, getHttpHeaders());
+            HttpEntity<QuizText> requestEntity = new HttpEntity<>(quiz, httpHeadersUtil.getHttpHeadersJson());
             HttpEntity<QuizText> response = restTemplate.exchange(urlMain + customUrl, HttpMethod.POST, requestEntity, QuizText.class);
             return response.getBody();
         } catch (Exception t) {
@@ -57,7 +61,7 @@ public class QuizTextServiceImpl implements QuizTextService {
     public QuizText update(QuizText quiz) {
         try {
             long id = quiz.getId();
-            HttpEntity<QuizText> requestEntity = new HttpEntity<>(quiz, getHttpHeaders());
+            HttpEntity<QuizText> requestEntity = new HttpEntity<>(quiz, httpHeadersUtil.getHttpHeadersJson());
             HttpEntity<QuizText> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.PUT, requestEntity, QuizText.class);
             return response.getBody();
 
@@ -82,7 +86,7 @@ public class QuizTextServiceImpl implements QuizTextService {
     @Override
     public List<QuizText> getAll() {
         try {
-            HttpEntity<QuizText> entity = new HttpEntity<>(null, getHttpHeaders());
+            HttpEntity<QuizText> entity = new HttpEntity<>(null, httpHeadersUtil.getHttpHeadersJson());
             ResponseEntity<List<QuizText>> response = restTemplate.exchange(urlMain + customUrl, HttpMethod.GET, entity, new ParameterizedTypeReference<List<QuizText>>() {
             });
 
@@ -92,12 +96,5 @@ public class QuizTextServiceImpl implements QuizTextService {
             logger.error(t.toString());
         }
         return null;
-    }
-
-    private HttpHeaders getHttpHeaders() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-Type", MediaType.APPLICATION_JSON_VALUE);
-        headers.add("Authorization", "Bearer " + jwtToken);
-        return headers;
     }
 }

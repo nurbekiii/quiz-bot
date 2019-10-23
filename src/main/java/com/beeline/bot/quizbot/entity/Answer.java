@@ -19,6 +19,7 @@ public class Answer implements Serializable {
     private String email;
     private String owner;
     private String comment;
+    private Integer point;
 
     @JsonProperty(value = "text_answer")
     private String textAnswer;
@@ -48,7 +49,7 @@ public class Answer implements Serializable {
 
     }
 
-    public Answer(Integer id, String email, String owner, String comment, String textAnswer, String taskCategory, Integer userId, Integer taskId, Integer taskLevel, String taskName, JsonNode fileAnswer) {
+    public Answer(Integer id, String email, String owner, String comment, String textAnswer, String taskCategory, Integer userId, Integer taskId, Integer taskLevel, String taskName, Integer point, JsonNode fileAnswer) {
         this.id = id;
         this.email = email;
         this.owner = owner;
@@ -59,6 +60,7 @@ public class Answer implements Serializable {
         this.taskId = taskId;
         this.taskLevel = taskLevel;
         this.taskName = taskName;
+        this.point = point;
         this.fileAnswer = fileAnswer;
     }
 
@@ -140,6 +142,14 @@ public class Answer implements Serializable {
 
     public void setTaskName(String taskName) {
         this.taskName = taskName;
+    }
+
+    public Integer getPoint() {
+        return point;
+    }
+
+    public void setPoint(Integer point) {
+        this.point = point;
     }
 
     public JsonNode getFileAnswer() {

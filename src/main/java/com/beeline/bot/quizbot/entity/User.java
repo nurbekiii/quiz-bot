@@ -18,7 +18,7 @@ import java.util.Map;
  * @author NIsaev on 26.09.2019
  */
 
-@JsonIgnoreProperties(ignoreUnknown = true, value = {"role", "created_at", "updated_at"})
+@JsonIgnoreProperties(ignoreUnknown = true, value = {"role", "created_at", "updated_at", "provider", "blocked", "dob", "confirmed", "temp_attr", "tasks"})
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 public class User implements Serializable {
     private Integer id;
@@ -44,35 +44,11 @@ public class User implements Serializable {
     @JsonProperty(value = "tlg_fullname")
     private String tlgFullname;
 
-    @JsonIgnore
-    @JsonProperty(value = "provider")
-    private String provider;
-
-    @JsonIgnore
-    @JsonProperty(value = "blocked")
-    private Boolean blocked;
-
-    private JsonNode role;
-
-    @JsonIgnore
-    @JsonProperty(value = "confirmed")
-    private Boolean confirmed;
-
-    @JsonIgnore
-    @JsonProperty(value = "created_at")
-    private LocalDateTime createdAt;
-
-    @JsonProperty(value = "updated_at")
-    @JsonIgnore
-    private LocalDateTime updatedAt;
-
-    @JsonProperty(value = "dob")
-    @JsonIgnore
-    private LocalDateTime dateOfBirth;
-
+    @JsonProperty(value = "temp_attr")
     @JsonIgnore
     private Map<String, Object> tempAttr;
 
+    @JsonProperty(value = "tasks")
     @JsonIgnore
     private List<Task> tasks;
 
@@ -168,62 +144,6 @@ public class User implements Serializable {
         this.tlgFullname = tlg_fullname;
     }
 
-    public String getProvider() {
-        return provider;
-    }
-
-    public void setProvider(String provider) {
-        this.provider = provider;
-    }
-
-    public JsonNode getRole() {
-        return role;
-    }
-
-    public void setRole(JsonNode role) {
-        this.role = role;
-    }
-
-    public Boolean getBlocked() {
-        return blocked;
-    }
-
-    public void setBlocked(Boolean blocked) {
-        this.blocked = blocked;
-    }
-
-    public Boolean getConfirmed() {
-        return confirmed;
-    }
-
-    public void setConfirmed(Boolean confirmed) {
-        this.confirmed = confirmed;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public LocalDateTime getDateOfBirth() {
-        return dateOfBirth;
-    }
-
-    public void setDateOfBirth(LocalDateTime dateOfBirth) {
-        this.dateOfBirth = dateOfBirth;
-    }
-
     public String getPassword() {
         return password;
     }
@@ -232,12 +152,17 @@ public class User implements Serializable {
         this.password = password;
     }
 
+    @JsonIgnore
     public Map<String, Object> getTempAttr() {
         return tempAttr;
     }
 
+    public void setTempAttrNull(Map<String, Object> tempAttr) {
+        this.tempAttr = tempAttr;
+    }
+
     public void setTempAttr(Map<String, Object> tempAttr) {
-        if(tempAttr != null)
+        if (tempAttr != null)
             this.tempAttr = tempAttr;
     }
 
@@ -245,6 +170,7 @@ public class User implements Serializable {
         this.tempAttr.put(key, val);
     }
 
+    @JsonIgnore
     public List<Task> getTasks() {
         return tasks;
     }
@@ -254,9 +180,13 @@ public class User implements Serializable {
     }
 
     public void addTask(Task task) {
+        if(tasks == null){
+            tasks = new ArrayList<>();
+        }
+        this.tasks.remove(task);
+
         this.tasks.add(task);
     }
-
 
     public Object getTempAttr(String key) {
         return this.tempAttr.get(key);

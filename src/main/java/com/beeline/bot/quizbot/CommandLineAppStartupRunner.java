@@ -9,11 +9,13 @@ import com.pengrad.telegrambot.model.*;
 import com.pengrad.telegrambot.model.request.ForceReply;
 import com.pengrad.telegrambot.model.request.Keyboard;
 import com.pengrad.telegrambot.model.request.ReplyKeyboardMarkup;
-import com.pengrad.telegrambot.passport.*;
 import com.pengrad.telegrambot.request.GetFile;
+import com.pengrad.telegrambot.request.SendDocument;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pengrad.telegrambot.request.SendPhoto;
 import com.pengrad.telegrambot.response.GetFileResponse;
 import com.pengrad.telegrambot.response.SendResponse;
+import com.vdurmont.emoji.EmojiParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +25,10 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -36,11 +38,16 @@ import java.util.stream.Collectors;
 public class CommandLineAppStartupRunner {
     private static final Logger LOG = LoggerFactory.getLogger(CommandLineAppStartupRunner.class);
 
-    private List<User> userList;
-    private Map<Long, User> usersCache;
+    private static final Pattern PATTERN = Pattern.compile("(\\(\\d{2}|d{3}\\%\\))");
+
+    //private List<User> userList;
+    private Map<Integer, User> usersCache;
 
     private String client_full_name = "client_full_name";
     private String ask_name_message_id = "ask_name_message_id";
+
+    private String input_comment_message_id = "input_comment_message_id";
+    private String comment_message = "comment_message";
 
     private String task1_message_id = "task1_message_id";
     private String task1_file_id = "task1_file_id";
@@ -49,9 +56,18 @@ public class CommandLineAppStartupRunner {
     private String level2_message_id = "level2_message_id";
     private String level3_message_id = "level3_message_id";
 
+    private final String FIRST_TASK = "FIRST_TASK";
+    private String titleEx = "title";
+
+    private final String helpBtn = ":wrench: Help";// EmojiParser.parseToUnicode(":wrench: Help");
+    private final String commentBtn = ":memo: Комментарий"; //comment_btn
+    private final String competBtn = ":shield: Компетенции";//comment_btn
+
+    private List<Pattern> buttonsPattern;
 
     private List<QuizText> textsList;
     private List<Task> tasksList;
+    private List<Category> categoriesList;
 
     private String QUIZ_BTN1;
     private String QUIZ_BTN2;
@@ -63,12 +79,13 @@ public class CommandLineAppStartupRunner {
     private String QUIZ_BTN8;
     private String QUIZ_BTN9;
 
+    private List<String> quizButtonsList;
 
     @Autowired
     private UserService userService;
 
     @Autowired
-    private PhotoSmileService photoSmileService;
+    private UserCommentService userCommentService;
 
     @Autowired
     private QuizTextService quizTextService;
@@ -77,30 +94,47 @@ public class CommandLineAppStartupRunner {
     private TaskService taskService;
 
     @Autowired
-    private AnswerService answerService;
+    private CategoryService categoryService;
 
+    @Autowired
+    private AnswerService answerService;
 
     @PostConstruct
     public void init() {
         usersCache = new HashMap<>();
-        userList = new ArrayList<>();
+        //userList = new ArrayList<>();
 
         textsList = quizTextService.getAll();
+        categoriesList = categoryService.getAll();
 
         tasksList = taskService.getAll();
-        tasksList.sort(Comparator.comparing(Task::getTitle).thenComparing(Comparator.comparing(Task::getOrder)));
+        tasksList.sort(Comparator.comparing(Task::getTitle).thenComparing(Comparator.comparing(Task::getId)));
 
         String[] res = getTextByCodes(new String[]{"quiz_btn1", "quiz_btn2", "quiz_btn3", "quiz_btn4", "quiz_btn5", "quiz_btn6", "quiz_btn7", "quiz_btn8", "quiz_btn9"}).toArray(new String[0]);
         //кнопки
-        QUIZ_BTN1 = res[0];
-        QUIZ_BTN2 = res[1];
-        QUIZ_BTN3 = res[2];
-        QUIZ_BTN4 = res[3];
-        QUIZ_BTN5 = res[4];
-        QUIZ_BTN6 = res[5];
-        QUIZ_BTN7 = res[6];
-        QUIZ_BTN8 = res[7];
-        QUIZ_BTN9 = res[8];
+        QUIZ_BTN1 = EmojiParser.parseToUnicode(getCategoryById(1).getCode() + " " + getCategoryById(1).getTitle()); //res[0];
+        QUIZ_BTN2 = EmojiParser.parseToUnicode(getCategoryById(2).getCode() + " " + getCategoryById(2).getTitle()); //res[1];
+        QUIZ_BTN3 = EmojiParser.parseToUnicode(getCategoryById(3).getCode() + " " + getCategoryById(3).getTitle()); //res[2];
+        QUIZ_BTN4 = EmojiParser.parseToUnicode(getCategoryById(4).getCode() + " " + getCategoryById(4).getTitle());
+        QUIZ_BTN5 = EmojiParser.parseToUnicode(getCategoryById(5).getCode() + " " + getCategoryById(5).getTitle());
+        QUIZ_BTN6 = EmojiParser.parseToUnicode(getCategoryById(6).getCode() + " " + getCategoryById(6).getTitle());
+        QUIZ_BTN7 = EmojiParser.parseToUnicode(getCategoryById(7).getCode() + " " + getCategoryById(7).getTitle());
+        QUIZ_BTN8 = EmojiParser.parseToUnicode(getCategoryById(8).getCode() + " " + getCategoryById(8).getTitle());
+        QUIZ_BTN9 = EmojiParser.parseToUnicode(getCategoryById(9).getCode() + " " + getCategoryById(9).getTitle());
+
+        quizButtonsList = new ArrayList<>();
+        quizButtonsList.addAll(Arrays.asList(new String[]{QUIZ_BTN1, QUIZ_BTN2, QUIZ_BTN3, QUIZ_BTN4, QUIZ_BTN5, QUIZ_BTN6, QUIZ_BTN7, QUIZ_BTN8, QUIZ_BTN9}));
+
+        //for buttons
+        buttonsPattern = new ArrayList<>();
+
+        for (Category cat : categoriesList) {
+            Pattern pattern = Pattern.compile(EmojiParser.parseToUnicode(cat.getCode() + " " + cat.getTitle()) + " (\\(\\d{2}|d{3})\\%\\)");
+            buttonsPattern.add(pattern);
+        }
+        int k = 0;
+
+        //categoryService.create(new Category(null, "xxx", "xx"));
     }
 
     @Value("${tlg.bot_token}")
@@ -109,8 +143,20 @@ public class CommandLineAppStartupRunner {
     @Value("${tlg.local_temp.folder}")
     private String TEMP_FOLDER;
 
+    @Value("${rest.url_uploads}")
+    private String urlUploads;
+
     private TelegramBot bot;
 
+    private void doIt() {
+        SendMessage send = new SendMessage(508363280l, "Test");
+        String[][] res = new String[][]{{EmojiParser.parseToUnicode("Привет :yellow_heart::green_heart:"), EmojiParser.parseToUnicode("Пока :basketball::green_heart:")}};
+        Keyboard replyKeyboardMarkup = new ReplyKeyboardMarkup(res)
+                .oneTimeKeyboard(true)   // optional
+                .resizeKeyboard(true)    // optional
+                .selective(true);        // optional
+        bot.execute(send.replyMarkup(replyKeyboardMarkup));
+    }
 
     @EventListener
     public void onApplicationEvent(ContextRefreshedEvent event) {
@@ -133,12 +179,13 @@ public class CommandLineAppStartupRunner {
                         newUser.setTlgFirstname(chat.firstName());
                         newUser.setTlgLastname(chat.lastName());
 
-                        newUser = checkUserInList(newUser);
+                        newUser = checkUserInListEx(newUser);
                         if (newUser.getId() == null) {
-                            newUser = checkMe(newUser);
-                            newUser = checkUserInList(newUser);
+                            newUser = checkMeEx(newUser);
+                            newUser = checkUserInListEx(newUser);
                         }
 
+                        //ответы на вопросы
                         if (message.replyToMessage() != null) {
                             Integer repMessId = message.replyToMessage().messageId();
 
@@ -146,41 +193,73 @@ public class CommandLineAppStartupRunner {
                                 //first name
                                 newUser = setFirstName(chatId, newUser, message.text());
                             } else if (newUser.getTempAttr(client_full_name) != null && repMessId.equals(newUser.getTempAttr(task1_message_id))) {
-                                //first task
-                                PhotoSize[] sizes = message.photo();
-                                newUser = sendFirstTask(chatId, newUser, sizes[0].fileId());
-                            } else if (newUser.getTempAttr(client_full_name) != null && newUser.getTempAttr(task1_message_id) != null
-                                    && (repMessId.equals(newUser.getTempAttr(level1_message_id)) ||
+                                //error in first task
+                                if (message.photo() == null && (message.text() != null || message.document() != null)) {
+                                    String msg = getTextByCode("answer_format_error");
+                                    sendEmojiText(chatId, msg + ":scream:");
+                                    newUser = firstTaskRequest(chatId, newUser);
+                                } else {
+                                    //first task
+                                    PhotoSize[] sizes = message.photo();
+                                    newUser = sendFirstTask(chatId, newUser, sizes[0].fileId());
+                                }
+                            } else if (repMessId.equals(newUser.getTempAttr(input_comment_message_id))) {
+                                //comment save
+                                setComment(chatId, newUser, message.text());
+                                newUser = senQuizSelect(chatId, newUser);
+                            } else if ((repMessId.equals(newUser.getTempAttr(level1_message_id)) ||
                                     repMessId.equals(newUser.getTempAttr(level2_message_id)) ||
-                                    repMessId.equals(newUser.getTempAttr(level3_message_id))
-                            )) {
-                                processAnswers(chatId, newUser, message, repMessId);
+                                    repMessId.equals(newUser.getTempAttr(level3_message_id)))) {
+                                User usr = processAnswers(chatId, newUser, message, repMessId);
+                                if (usr == null) {
+                                    newUser = handleButtonTask(chatId, newUser, newUser.getTempAttr(titleEx).toString());
+                                }
                             }
-
                         }
+                        //кнопки
                         if (text != null) {
                             switch (text) {
                                 case "/start":
                                     newUser = startAction(chatId, newUser);
                                     break;
-
-                                case "Фокус на клиента":
-                                case "Лидерство и развитие команд":
-                                case "Стратегическое мышление":
-                                case "Открытость к экспериментам":
-                                case "Бизнес-проницательность":
-                                case "Нацеленность на результат":
-                                case "Управление изменениями":
-                                case "Честность и этика":
-                                case "Сотрудничество":
-                                    newUser = handleButtonTask(chatId, newUser, text, 1, level1_message_id);//FIFTH CHANGE
-                                    break;
                             }
+
+                            //компетенции
+                            if (text.contains("[") && text.contains("]")) {
+                                String text2 = text.substring(0, text.indexOf("[") - 1);
+                                if (quizButtonsList.contains(text2))
+                                    newUser = handleButtonTask(chatId, newUser, text2);//FIFTH CHANGE
+                            }
+
+                            if (quizButtonsList.contains(text)) {
+                                newUser = handleButtonTask(chatId, newUser, text);//FIFTH CHANGE
+                            }
+
+                            //кнопки
+                            String parsedEmoji = getBackFromEmoji(text);
+                            switch (parsedEmoji) {
+                                case helpBtn:
+                                    showHelpMessage(chatId);
+                                    break;
+
+                                case competBtn:
+                                    newUser = senQuizSelect(chatId, newUser);
+                                    break;
+
+                                case commentBtn:
+                                    newUser = inputCommentRequest(chatId, newUser);
+                                    break;
+
+                                //default:  botMissUndestand(chatId);   break;
+                            }
+
                         }
                         System.out.println("---------------\n\r");
                         System.out.println(chat);
                         System.out.println(text != null ? text : "");
                         System.out.println(message.messageId());
+                        System.out.println(message.photo() != null ? message.photo()[0].fileId() : "");
+                        System.out.println(message.document() != null ? message.document().fileId() : "");
                         System.out.println("---------------\n\r");
                     }
                 }
@@ -192,46 +271,138 @@ public class CommandLineAppStartupRunner {
 
     }
 
+    private String getBackFromEmoji(String input) {
+        return EmojiParser.parseFromUnicode(input, e -> ":" + e.getEmoji().getAliases().get(0) + ":");
+    }
+
+    private User senQuizSelect(Long chatId, User newUser) {
+        String msg = getTextByCode("select_quiz"); //Выберите компетенцию
+        List<Task> userTasks = newUser.getTasks().stream().filter(tsk -> !tsk.getCode().equals(FIRST_TASK)).collect(Collectors.toList());
+        return sendQuizChoice(chatId, newUser, msg);
+    }
+
+    private void sendCongratText(long chatId, boolean hasDouble) {
+        String text = getTextByCode("100_points_easy");
+        if (hasDouble) {
+            text = getTextByCode("200_points_easy");
+        }
+        sendEmojiText(chatId, ":gift: " + text);
+    }
+
     private User processAnswers(Long chatId, User newUser, Message message, Integer repMessId) {
+        //handle
+        String answer = message.text();
+        Document doc = message.document();
+        Audio audio = message.audio();
+        Video video = message.video();
+        Voice voice = message.voice();
+        Sticker sticker = message.sticker();
+        Animation animation = message.animation();
+        PhotoSize sizes[] = message.photo();
+        Task task = (newUser.getTasks().get(newUser.getTasks().size() - 1));
+
+
+        boolean hasText = false, hasDoc = false, hasPdf = false, hasPhoto = false;
+        String resultTypes = task.getResult().toLowerCase();
+        if (answer != null) {
+            hasText = resultTypes.contains("text") || (resultTypes.contains("link") && (answer.startsWith("http://") || answer.startsWith("http://")));
+        }
+
+        if (doc != null) {
+            hasDoc = resultTypes.contains("file");
+        }
+        if (doc != null) {
+            hasPdf = resultTypes.contains("pdf") && doc.fileName().endsWith(".pdf");
+        }
+
+        if (audio != null || voice != null) {
+            hasDoc = resultTypes.contains("voice message");
+        }
+
+        if (video != null || animation != null) {
+            hasDoc = resultTypes.contains("video");
+        }
+
+        if (sizes != null || sticker != null) {
+            hasPhoto = resultTypes.contains("picture") || resultTypes.contains("sticker");
+        }
+
+        //Неправильный формат ответа
+        if (!(hasText || hasDoc || hasPhoto || hasPdf)) {
+            String msg = getTextByCode("answer_format_error_ex"); //Неправильный формат ответа
+            sendEmojiText(chatId, ":scream_cat: " + msg + ":  " + resultTypes + " :pushpin:");
+            return null;
+        }
+
         boolean isLev1 = repMessId.equals(newUser.getTempAttr(level1_message_id) != null ? newUser.getTempAttr(level1_message_id) : -1);
         boolean isLev2 = repMessId.equals(newUser.getTempAttr(level2_message_id) != null ? newUser.getTempAttr(level2_message_id) : -1);
         boolean isLev3 = repMessId.equals(newUser.getTempAttr(level3_message_id) != null ? newUser.getTempAttr(level3_message_id) : -1);
 
-        //handle
-        String answer = message.text();
-        Document doc = message.document();
-        PhotoSize sizes[] = message.photo();
-        String fielId = (sizes != null ? sizes[0].fileId() : null);
+        String fileId = (sizes != null ? sizes[0].fileId() : null);
         if (doc != null)
-            fielId = doc.fileId();
+            fileId = doc.fileId();
+        else if (audio != null)
+            fileId = audio.fileId();
+        else if (voice != null)
+            fileId = voice.fileId();
+        else if (video != null)
+            fileId = video.fileId();
+        else if (animation != null)
+            fileId = animation.fileId();
+        else if (sticker != null)
+            fileId = sticker.fileId();
 
         int nextLevel = (isLev1 && !isLev2 ? 2 : (isLev2 && !isLev3 ? 3 : (isLev3 ? 4 : 4)));
 
-        Task task = null;
-        for (Task tsk : newUser.getTasks()) {
-            if (tsk.getOrder().intValue() == (nextLevel - 1))
-                task = tsk;
+        Task task2 = null;
+        if (task != null) {
+            int num = (int) tasksList.stream().filter(tsk -> tsk.getSameTaskId() != null && tsk.getSameTaskId().equals(task.getId())).count();
+            if (num > 0)
+                task2 = tasksList.stream().filter(tsk -> tsk.getSameTaskId() != null && tsk.getSameTaskId().equals(task.getId())).collect(Collectors.toList()).get(0);
         }
 
-        Answer newAnswer = handleLevelAnswer(newUser, task, answer, fielId);
-        if (nextLevel < 4)
-            newUser = handleButtonTask(chatId, newUser, task.getTitle(), nextLevel, (nextLevel == 2 ? level2_message_id : level3_message_id));//SIXTH CHANGE
-        else {
+        //если такое задание уже было ранее выполнено
+        if (!newUser.getTasks().isEmpty() && task2 != null) {
+            int taskId = task2.getId().intValue();
+            int num = (int) newUser.getTasks().stream().filter(tsk -> tsk.isFinished() && tsk.getId().intValue() == taskId).count();
+            if (num > 0)
+                task2 = null;
+        }
+
+        //запись ответа в БД
+        Answer newAnswer = handleLevelAnswer(newUser, task, task2, answer, fileId, (nextLevel == 2 ? 100 : null), (nextLevel == 2 ? "100 points for easy level" : null));
+        if (nextLevel == 2) {
+            //Поздравляем, ты заработал(-ла) 100 баллов! Ты можешь оставаться в этой компетенции или выбрать другую.
+            boolean hasDuplicateTask = (task2 != null);
+            sendCongratText(chatId, hasDuplicateTask);
+            newUser.setPoints(newUser.getPoints() + (hasDuplicateTask ? 200 : 100)); //SEVENTH CHANGE
+        } else {
+            String msg = getTextByCode("answer_received");
+            sendEmojiText(chatId, msg + " :gift:");
+        }
+
+        ///task finished
+        task.setFinished(true);
+        newUser.addTask(task);
+        if (task2 != null) {
+            task2.setFinished(true);
+            newUser.addTask(task2);
+        }
+        newUser = changeProps(newUser);
+
+        newUser = senQuizSelect(chatId, newUser);
+        if (nextLevel >= 4) {
             //очистим кеш ответов
             newUser.setTempAttr(level1_message_id, null);
-            newUser.setTempAttr(level1_message_id, null);
-            newUser.setTempAttr(level1_message_id, null);
-
-            String[] tsks = newUser.getTasks().stream().map(Task::getTitle).collect(Collectors.toSet()).toArray(new String[0]);
-
-            String msg = getTextByCode("select_quiz"); //Выберите категорию
-            sendQuizChoice(bot, chatId, msg, Arrays.asList(tsks));
+            newUser.setTempAttr(level2_message_id, null);
+            newUser.setTempAttr(level3_message_id, null);
+            newUser = changeProps(newUser);
         }
 
         return newUser;
     }
 
-    private Answer handleLevelAnswer(User newUser, Task task, String textAnswer, String fileId) {
+    private Answer handleLevelAnswer(User newUser, Task task, Task task2, String textAnswer, String fileId, Integer point, String comment) {
         java.io.File fl = null;
         byte[] bytes = null;
         try {
@@ -249,42 +420,94 @@ public class CommandLineAppStartupRunner {
         int taskId = task.getId();
         int level = task.getOrder();
         String taskCategory = task.getTitle();
+        String desc = task.getDescription();
 
         Answer answer = new Answer();
         answer.setUserId(userId);
         answer.setOwner(username);
         answer.setEmail(email);
-        answer.setComment("--------");
+        answer.setPoint(point);
+        answer.setComment(comment);
 
         answer.setTaskId(taskId);
         answer.setTextAnswer(textAnswer);
         answer.setTaskCategory(taskCategory);
         answer.setTaskLevel(level);
-        answer.setTaskName(task.getDescription());
+        answer.setTaskName(desc);
         if (fl != null) {
             answer.setAnswerFile(fl);
             answer.setFileContent(bytes);
         }
-
         Answer newAnswer = answerService.save(answer);
-        return newAnswer;
 
+        if (task2 != null) {
+            int taskId2 = task2.getId();
+            int level2 = task2.getOrder();
+            String taskCategory2 = task2.getTitle();
+            String desc2 = task2.getDescription();
+
+            Answer answer2 = new Answer();
+            answer2.setUserId(userId);
+            answer2.setOwner(username);
+            answer2.setEmail(email);
+            answer2.setPoint(point);
+            answer2.setComment(comment);
+
+            answer2.setTaskId(taskId2);
+            answer2.setTextAnswer(textAnswer);
+            answer2.setTaskCategory(taskCategory2);
+            answer2.setTaskLevel(level2);
+            answer2.setTaskName(desc2);
+            if (fl != null) {
+                answer2.setAnswerFile(fl);
+                answer2.setFileContent(bytes);
+            }
+
+            Answer newAnswer2 = answerService.save(answer2);
+        }
+
+        return newAnswer;
+    }
+
+    private List<Task> getFinishedTasks(int userId) {
+        TaskFilter filter = new TaskFilter(userId, null, null);
+        List<Integer> taskIds = answerService.getAnswersByFilter(filter).stream().map(Answer::getTaskId).collect(Collectors.toList());
+        if (taskIds != null && !taskIds.isEmpty()) {
+            List<Task> taskList = taskService.getTaskByIds(taskIds);
+            if (taskList != null && !taskList.isEmpty())
+                taskList.stream().forEach(tsk -> tsk.setFinished(true)); //mark finished
+
+            return taskList;
+        }
+        return null;
     }
 
     private User startAction(long chatId, User newUser) {
+        //есть ФИО, есть первое задание
+        if (newUser.getId() != null && newUser.getTlgFullname() != null) {
+            TaskFilter filter = new TaskFilter(newUser.getId(), 1, FIRST_TASK);
+            int num = answerService.getAnswersByFilter(filter).size();
+            if (num > 0) {
+                String msg = getTextByCode("hello_text"); //Привет
+                sendEmojiText(chatId, msg + " " + newUser.getTlgFullname() + "! :heart: :green_heart: :purple_heart:");
+
+                msg = getTextByCode("press_for_task"); //Для заданий нажмите на "Компетенции"
+
+                String res[][] = new String[][]{new String[]{EmojiParser.parseToUnicode(competBtn), EmojiParser.parseToUnicode(commentBtn), EmojiParser.parseToUnicode(helpBtn)}};
+                showButtons(chatId, (msg + " :point_down:"), res);
+                return newUser;
+            }
+        }
+
         String msg = getTextByCode("welcome_text"); //"Добро пожаловать в игру Кубок компетенций или BeeHero! Have fun and become winner. Впереди тебя ждет много увлекательных приключений и новой информации, которые помогут тебе быть эффективными в твоей роли.";
-        bot.execute(new SendMessage(chatId, msg));
+        sendEmojiText(chatId, msg + ":clap::clap::clap:");
 
         newUser.setPoints(100);
         String msg3 = getTextByCode("100_points"); //"Мы поздравляем тебя! Ты уже заработал свои первые 100 баллов. Чтобы ты мог продолжать зарабатывать баллы далее, предлагаю познакомиться";
-        bot.execute(new SendMessage(chatId, msg3));
+        sendEmojiText(chatId, msg3 + ":moneybag::moneybag::moneybag:");
 
         String msg4 = getTextByCode("enter_your_name");//"Пожалуйста введите Ваши Имя и Фамилию";
-        SendMessage send = new SendMessage(chatId, msg4);
-
-        send.replyMarkup(new ForceReply());
-        SendResponse response4 = bot.execute(send);
-        int messId = response4.message().messageId();
+        int messId = sendEmojiForceReply(chatId, msg4 + ":keyboard:");
 
         newUser.setTempAttr(ask_name_message_id, messId);
         newUser = changeProps(newUser); //FIRST CHANGE
@@ -297,19 +520,47 @@ public class CommandLineAppStartupRunner {
         newUser.setPoints(150);
         newUser = changeProps(newUser);  //SECOND CHANGE
 
-        String msg22 = getTextByCode("50_points"); // "Поздравляем, ты заработал 50 баллов";
-        SendResponse response22 = bot.execute(new SendMessage(chatId, msg22));
+        String msg = getTextByCode("50_points"); // "Поздравляем, ты заработал 50 баллов";
+        sendEmojiText(chatId, msg + ":moneybag::moneybag:");
 
-        String msg33 = getTextByCode("task1");  // "Для того чтобы ты мог понять суть игры, предлагаем тебе пройти первое задание. Пройди по ссылке и пройди онлайн тренинг на нашей корпоративной платформе Crossknowledge и ознакомься с ним. Для подтверждения выполнения задания загрузи скрин со 100% прогрессом по курсу.";
-        SendMessage send33 = new SendMessage(chatId, msg33);
+        newUser = firstTaskRequest(chatId, newUser);
 
-        ////????????????
-        send33.replyMarkup(new ForceReply());
-        SendResponse response33 = bot.execute(send33);
-        int messId = response33.message().messageId();
+        return newUser;
+    }
 
+    private void sendText(long chatId, String code) {
+        String msg = getTextByCode(code);
+        bot.execute(new SendMessage(chatId, msg));
+    }
+
+    private void sendPureText(long chatId, String msg) {
+        bot.execute(new SendMessage(chatId, msg));
+    }
+
+    private void sendEmojiText(long chatId, String msg) {
+        bot.execute(new SendMessage(chatId, EmojiParser.parseToUnicode(msg)));
+    }
+
+    private User firstTaskRequest(long chatId, User newUser) {
+        Task task = getTaskByTitleLevel(FIRST_TASK, 1);
+        int messId = sendEmojiForceReply(chatId, ":game_die: :bowling:" + task.getDescription());
+
+        newUser.addTask(task);
         newUser.setTempAttr(task1_message_id, messId);
         newUser = changeProps(newUser); //THIRD CHANGE
+
+        return newUser;
+    }
+
+    private User setComment(long chatId, User newUser, String comment) {
+        newUser.setTempAttr(comment_message, comment);
+        newUser = changeProps(newUser);  //EIGHT' CHANGE
+
+        String msg = getTextByCode("comment_received"); // "Ваш комментарий принят";
+        sendEmojiText(chatId, msg + " :yellow_heart:");
+
+        UserComment userComment = new UserComment(null, newUser.getEmail(), newUser.getUsername(), comment);
+        userCommentService.save(userComment);
 
         return newUser;
     }
@@ -326,80 +577,212 @@ public class CommandLineAppStartupRunner {
     }
 
     private User sendFirstTask(long chatId, User newUser, String fileId) {
-
+        int points = 200;
         newUser.setTempAttr(task1_file_id, fileId);
-        newUser.setPoints(newUser.getPoints() + 200);
+        newUser.setPoints(newUser.getPoints() + points);
         newUser = changeProps(newUser); //FOURTH CHANGE
 
-        PhotoSmile photo = new PhotoSmile();
-        photo.setUsername(newUser.getUsername());
-        photo.setOwner(newUser.getEmail());
-        photo.setDesc("first task complete screenshot");
-
+        java.io.File file2 = null;
+        byte[] bytes = null;
         try {
-            java.io.File file2 = downloadRemoteFile(fileId);
-            byte[] bytes = java.nio.file.Files.readAllBytes(file2.toPath());
-            photo.setImageContent(bytes);
-            photo.setImageFile(file2);
+            file2 = downloadRemoteFile(fileId);
+            bytes = java.nio.file.Files.readAllBytes(file2.toPath());
         } catch (Exception t) {
             t.printStackTrace();
         }
 
-        PhotoSmile smile = photoSmileService.save(photo);
+        Task task = newUser.getTasks().stream().filter(tsk -> tsk.getCode().equals(FIRST_TASK)).collect(Collectors.toList()).get(0);
+
+        Answer answer = new Answer();
+        answer.setUserId(newUser.getId());
+        answer.setOwner(newUser.getUsername());
+        answer.setEmail(newUser.getEmail());
+        answer.setComment("first task complete screenshot");
+
+        answer.setTaskId(task.getId());
+        answer.setTaskCategory(task.getTitle());
+        answer.setTaskLevel(task.getOrder());
+        answer.setTaskName(task.getDescription());
+        answer.setPoint(points);
+        if (file2 != null) {
+            answer.setAnswerFile(file2);
+            answer.setFileContent(bytes);
+        }
+        Answer newAnswer = answerService.save(answer);
 
         String msg = getTextByCode("200_points"); //"Поздравляем! +200 баллов к твоему счету баллов. Для того чтобы продолжить игру, выбери компетенцию";
-        sendQuizChoice(bot, chatId, msg, null);
+        String str = EmojiParser.parseToUnicode(":gift: :moneybag: :moneybag:" + msg);
+        sendQuizChoice(chatId, newUser, str);
 
         return newUser;
     }
 
-    private void sendQuizChoice(TelegramBot bot, long chatId, String msg, List<String> excludeBtns) {
+    private int getCountTasks(List<Task> tasks, String catName) {
+        if (tasks != null && !tasks.isEmpty()) {
+            return (int) tasks.stream().filter(tsk -> tsk.getTitle().equals(catName) && tsk.isFinished()).count();
+        }
+        return 0;
+    }
+
+    private int getUnfininshedTaskLevel(List<Task> tasks, String catName) {
+        if (tasks != null && !tasks.isEmpty()) {
+            int num = (int) tasks.stream().filter(tsk -> tsk.getTitle().equals(catName) && tsk.isFinished()).count();
+            if (num >= 3)
+                return 4;
+
+            num = (int) tasks.stream().filter(tsk -> tsk.getTitle().equals(catName) && tsk.isFinished() && tsk.getOrder() == 1).count();
+            if (num == 0)
+                return 1;
+
+            num = (int) tasks.stream().filter(tsk -> tsk.getTitle().equals(catName) && tsk.isFinished() && tsk.getOrder() == 2).count();
+            if (num == 0)
+                return 2;
+
+            num = (int) tasks.stream().filter(tsk -> tsk.getTitle().equals(catName) && tsk.isFinished() && tsk.getOrder() == 3).count();
+            if (num == 0)
+                return 3;
+        }
+        return 1;
+    }
+
+    private User sendQuizChoice(long chatId, User newUser, String msg) {
         String[][] res = new String[][]{
                 new String[]{QUIZ_BTN1, QUIZ_BTN2, QUIZ_BTN3},
                 new String[]{QUIZ_BTN4, QUIZ_BTN5, QUIZ_BTN6},
-                new String[]{QUIZ_BTN7, QUIZ_BTN8, QUIZ_BTN9}
+                new String[]{QUIZ_BTN7, QUIZ_BTN8, QUIZ_BTN9},
+                new String[]{EmojiParser.parseToUnicode(competBtn), EmojiParser.parseToUnicode(commentBtn), EmojiParser.parseToUnicode(helpBtn)}
         };
-        if (excludeBtns != null) {
-            for (String btnText : excludeBtns) {
-                for (int i = 0; i < 3; i++) {
-                    for (int j = 0; j < 3; j++) {
-                        if (res[i][j] !=null && res[i][j].equals(btnText)) {
-                            res[i][j] = null;
+
+        //Finished tasks
+        List<Task> tasks = getFinishedTasks(newUser.getId());
+
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                String name = getClearText(res[i][j], true);
+                String taskRes = "";
+
+                if (tasks != null && !tasks.isEmpty() && tasks.size() > 0) {
+                    for (int k = 1; k < 4; k++) {
+                        final int level = k;
+                        int rs = (int) tasks.stream().filter(tsk -> tsk.getOrder().equals(level) && tsk.getTitle().equals(name)).count();
+                        if (rs > 0) {
+                            /////for cache
+                            Task task = tasks.stream().filter(tsk -> tsk.getOrder().equals(level) && tsk.getTitle().equals(name)).collect(Collectors.toList()).get(0);
+                            newUser.addTask(task);
+                            ////
+                            taskRes += ":green_heart:";
+                        } else {
+                            taskRes += ":yellow_heart:";
                         }
                     }
+                } else {
+                    taskRes += ":yellow_heart::yellow_heart::yellow_heart:";
                 }
-            }
 
-            res = new String[][]{
-                    Arrays.asList(res[0]).stream().filter(line -> line != null).collect(Collectors.toList()).toArray(new String[0]),
-                    Arrays.asList(res[1]).stream().filter(line -> line != null).collect(Collectors.toList()).toArray(new String[0]),
-                    Arrays.asList(res[2]).stream().filter(line -> line != null).collect(Collectors.toList()).toArray(new String[0])
-            };
+                res[i][j] = res[i][j] + EmojiParser.parseToUnicode(" [" + taskRes + "]");
+            }
         }
 
-        SendMessage send = new SendMessage(chatId, msg);
-        Keyboard replyKeyboardMarkup = new ReplyKeyboardMarkup(res)
-                //.oneTimeKeyboard(true)   // optional
-                .resizeKeyboard(true)    // optional
-                .selective(true);        // optional
-        SendResponse response = bot.execute(send.replyMarkup(replyKeyboardMarkup));
-        //int messId = response.message().messageId();
+        showButtons(chatId, (msg + " :point_down:"), res);
+        return newUser;
     }
 
-    private User handleButtonTask(Long chatId, User user, String title, int level, String level_message_id) {
-        Task task = getTaskByTitleLevel(title, level);
+    private void showButtons(long chatId, String msg, String res[][]) {
+        String msg1 = EmojiParser.parseToUnicode(msg);
+        SendMessage send = new SendMessage(chatId, msg1);
+
+        Keyboard replyKeyboardMarkup = new ReplyKeyboardMarkup(res)
+                .oneTimeKeyboard(true)   // optional
+                .resizeKeyboard(true)    // optional
+                .selective(true);        // optional
+        bot.execute(send.replyMarkup(replyKeyboardMarkup));
+    }
+
+    private String getClearText(String input, boolean rigthSide) {
+        String res = getBackFromEmoji(input);
+        int pos = rigthSide ? res.lastIndexOf(":") : res.indexOf(":");
+        if (pos >= 0) {
+            return (rigthSide ? res.substring(pos + 2) : res.substring(0, pos - 2));
+        }
+        return res;
+    }
+
+    private User handleButtonTask(Long chatId, User user, String title) {
+        String title1 = getClearText(title, true);
+
+        if (!(user.getTasks() != null && !user.getTasks().isEmpty())) {
+            List<Task> tasksList = getFinishedTasks(user.getId());
+            user.setTasks(tasksList);
+        }
+
+        int level = getUnfininshedTaskLevel(user.getTasks(), title1);
+        String level_message_id = level1_message_id;
+        if (level == 2) {
+            level_message_id = level2_message_id;
+        }
+        if (level == 3) {
+            level_message_id = level3_message_id;
+        }
+        //уже выполнен
+        if (level == 4) {
+            String text = getTextByCode("tasks_done");
+            sendEmojiText(chatId, text + " :point_down:");
+            return user;
+        }
+
+        Task task = getTaskByTitleLevel(title1, level);
         String description = task.getDescription();
-        SendMessage send = new SendMessage(chatId, description);
+        if (task.getFileId() != null) {
+            String files[] = task.getFileId().split(",");
+            String type = task.getFileType();
 
-        send.replyMarkup(new ForceReply());
-        SendResponse response9 = bot.execute(send);
-        int messId = response9.message().messageId();
+            for (String fileId : files) {
+                if (type.equals("photo")) {
+                    SendPhoto photo = new SendPhoto(chatId, fileId.trim());
+                    bot.execute(photo);
+                } else {
+                    SendDocument document = new SendDocument(chatId, fileId.trim());
+                    bot.execute(document);
+                }
+            }
+        }
 
-        user.setTempAttr("title", title);
+        String expFormat = getTextByCode("exp_format"); //Ожидаемый формат:
+        String format = (task.getResult() != null ? task.getResult().toLowerCase() : "");
+
+        int messId = sendEmojiForceReply(chatId, ":green_book:" + description + "\n\r\n\r[:bellhop_bell: " + expFormat + ":  " + format + " :pushpin:]");
+
+        user.setTempAttr(titleEx, title1);
         user.setTempAttr(level_message_id, messId);
         user.addTask(task);
         //user = changeProps(user); //FIFTH CHANGE
         return user;
+    }
+
+    private int sendEmojiForceReply(long chatId, String text) {
+        SendMessage send = new SendMessage(chatId, EmojiParser.parseToUnicode(text));
+        send.replyMarkup(new ForceReply());
+        SendResponse response = bot.execute(send);
+
+        int messId = response.message().messageId();
+        return messId;
+    }
+
+    private void showHelpMessage(long chatId) {
+        String mess = getTextByCode("help_btn");
+        sendEmojiText(chatId, mess + ":ambulance:");
+    }
+
+    private User inputCommentRequest(long chatId, User user) {
+        String msg = getTextByCode("comment_input");//"Введите комментарий";
+        int messId = sendEmojiForceReply(chatId, ":point_up: :keyboard:" + msg);
+        user.setTempAttr(input_comment_message_id, messId);
+        return user;
+    }
+
+    private void botMissUndestand(long chatId) {
+        String msg = getTextByCode("sorry_no_understand");
+        sendEmojiText(chatId, msg + ":innocent:");
     }
 
     private Task getTaskByTitleLevel(String title, int level) {
@@ -410,18 +793,18 @@ public class CommandLineAppStartupRunner {
         return null;
     }
 
-    private Task getTaskByCode(String code) {
-        for (Task task : tasksList) {
-            if (task.getCode().equals(code))
-                return task;
-        }
-        return null;
-    }
-
     private String getTextByCode(String code) {
         for (QuizText text : textsList) {
             if (text.getCode().equals(code))
                 return text.getText();
+        }
+        return null;
+    }
+
+    private Category getCategoryById(long id) {
+        for (Category category : categoriesList) {
+            if (category.getId().equals(id))
+                return category;
         }
         return null;
     }
@@ -437,6 +820,19 @@ public class CommandLineAppStartupRunner {
         return list;
     }
 
+    private User checkMeEx(User user) {
+        User user1 = userService.getUserByTlgId(user.getTlgId());
+        if (user1 != null)
+            return user1;
+
+        //создадим в БД Новую
+        user.setUsername(user.getTlgUsername() != null ? user.getTlgUsername() : user.getTlgFirstname());
+        user.setEmail((user.getTlgUsername() != null ? user.getTlgUsername() : "xyz") + System.currentTimeMillis() + "@mail.xxx");
+        user.setPassword("12345");
+
+        return userService.save(user);
+    }
+
     private User checkMe(User user) {
         System.out.println("checkMe STARTED");
         List<User> list = userService.getAllUsers();
@@ -444,7 +840,7 @@ public class CommandLineAppStartupRunner {
             for (User usr : list) {
                 if (usr.getTlgId() != null && usr.getTlgId().equals(user.getTlgId())) {
                     //возвратим что есть
-                    if (usr.getTlgUsername() != null) {
+                    if (usr.getTlgId() != null) {
                         LOG.info("found user details");
                         return usr;
                     }
@@ -463,10 +859,11 @@ public class CommandLineAppStartupRunner {
 
         //создадим в БД Новую
         User usr = new User();
-        usr.setUsername(user.getTlgUsername());
-        usr.setEmail(user.getTlgUsername() + "@mail.xxx");
+        usr.setUsername(user.getTlgUsername() != null ? user.getTlgUsername() : user.getTlgFirstname());
+        usr.setEmail((user.getTlgUsername() != null ? user.getTlgUsername() : "xyz" + System.currentTimeMillis()) + "@mail.xxx");
         usr.setPassword("12345");
 
+        usr.setTlgId(user.getTlgId());
         usr.setTlgUsername(user.getTlgUsername());
         usr.setTlgFirstname(user.getTlgFirstname());
         usr.setTlgLastname(user.getTlgLastname());
@@ -475,6 +872,7 @@ public class CommandLineAppStartupRunner {
         return userService.save(usr);
     }
 
+    /*
     private User checkUserInList(User user) {
         for (User curUsr : userList) {
             if (user.getId() == null) {
@@ -502,6 +900,40 @@ public class CommandLineAppStartupRunner {
         if (!userList.contains(user))
             userList.add(user);
 
+        return user;
+    }
+    */
+    private User checkUserInListEx(User user) {
+        if (user.getId() == null) {
+            for (Map.Entry<Integer, User> entry : usersCache.entrySet()) {
+                User curUsr = entry.getValue();
+                if (curUsr.getId() != null && curUsr.getTlgId().equals(user.getTlgId())) {
+                    return curUsr;
+                }
+            }
+        } else {
+            User curUsr = usersCache.get(user.getId());
+            if (curUsr != null && curUsr.getTlgId().equals(user.getTlgId())) {
+                if (curUsr.getId() == null) {
+                    usersCache.put(user.getId(), user);
+                    return user;
+                }
+            } else {
+                usersCache.put(user.getId(), user);
+                return user;
+            }
+            return curUsr;
+        }
+
+        for (Map.Entry<Integer, User> entry : usersCache.entrySet()) {
+            User curUsr = entry.getValue();
+            if (user.getTlgId().equals(curUsr.getTlgId())) {
+                return curUsr;
+            }
+        }
+
+        if (usersCache.get(user.getId()) == null)
+            usersCache.put(user.getId(), user);
 
         return user;
     }
@@ -523,7 +955,6 @@ public class CommandLineAppStartupRunner {
     }
 
     private User changeProps(User user) {
-
         //поищем в БД
         User dbUser = findUserInDB(user);
         if (dbUser != null) {
@@ -534,8 +965,10 @@ public class CommandLineAppStartupRunner {
             dbUser.setTlgFirstname(user.getTlgFirstname());
             dbUser.setTlgLastname(user.getTlgLastname());
 
-            if (user.getTempAttr() != null && !user.getTempAttr().isEmpty())
+            if (user.getTempAttr() != null && !user.getTempAttr().isEmpty()) {
                 dbUser.setTempAttr(user.getTempAttr());
+                dbUser.setTasks(user.getTasks());
+            }
 
             //ФИО
             if (user.getTempAttr(client_full_name) != null) {
@@ -550,41 +983,14 @@ public class CommandLineAppStartupRunner {
 
         dbUser.setPassword("12345"); //TO-DO ???
 
-        userList.remove(dbUser); //удалим старый
-        userList.add(dbUser); //обновим новым
+        //userList.remove(dbUser); //удалим старый
+        //userList.add(dbUser); //обновим новым
+        usersCache.put(dbUser.getId(), dbUser);
 
         dbUser = userService.save(dbUser); //сохраним в БД
         ///
         dbUser.setTempAttr(user.getTempAttr());
+        dbUser.setTasks(user.getTasks());
         return dbUser;
-    }
-
-    private static void printPassPortData(PassportData passportData) throws Exception {
-        if (passportData == null)
-            return;
-
-        String privateKey = "abc_my_baby";
-        EncryptedCredentials encryptedCredentials = passportData.credentials();
-        Credentials credentials = encryptedCredentials.decrypt(privateKey);
-
-        EncryptedPassportElement[] encryptedPassportElements = passportData.data();
-        for (EncryptedPassportElement element : encryptedPassportElements) {
-            DecryptedData decryptedData = element.decryptData(credentials);
-            // DecryptedData can be cast to specific type by checking instanceOf
-            if (decryptedData instanceof PersonalDetails) {
-                PersonalDetails personalDetails = (PersonalDetails) decryptedData;
-
-                Field[] fields = personalDetails.getClass().getFields();
-                for (int i = 0; i < fields.length; i++) {
-                    System.out.println("field: " + fields[i] + ":  " + personalDetails.getClass().getField(fields[i].getName()) + ":  " + personalDetails.getClass().getField(fields[i].getName()).toString());
-
-                }
-
-            }
-            // Or by checking type of passport element
-            if (element.type() == EncryptedPassportElement.Type.address) {
-                ResidentialAddress address = (ResidentialAddress) decryptedData;
-            }
-        }
     }
 }

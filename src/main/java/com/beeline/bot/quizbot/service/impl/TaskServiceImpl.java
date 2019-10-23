@@ -1,8 +1,10 @@
 package com.beeline.bot.quizbot.service.impl;
 
 import com.beeline.bot.quizbot.entity.Task;
+import com.beeline.bot.quizbot.entity.TaskFilter;
 import com.beeline.bot.quizbot.service.TaskService;
 import com.beeline.bot.quizbot.service.TaskService;
+import com.beeline.bot.quizbot.util.HttpHeadersUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,9 @@ public class TaskServiceImpl implements TaskService {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Autowired
+    private HttpHeadersUtil httpHeadersUtil;
+
     @Value("${rest.url_main}")
     private String urlMain;
 
@@ -43,7 +48,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public Task create(Task task){
         try {
-            HttpEntity<Task> requestEntity = new HttpEntity<>(task, getHttpHeaders());
+            HttpEntity<Task> requestEntity = new HttpEntity<>(task, httpHeadersUtil.getHttpHeadersJson());
             HttpEntity<Task> response = restTemplate.exchange(urlMain + customUrl, HttpMethod.POST, requestEntity, Task.class);
             return response.getBody();
         } catch (Exception t) {
@@ -56,7 +61,7 @@ public class TaskServiceImpl implements TaskService {
     public Task update(Task task) {
         try {
             long id = task.getId();
-            HttpEntity<Task> requestEntity = new HttpEntity<>(task, getHttpHeaders());
+            HttpEntity<Task> requestEntity = new HttpEntity<>(task, httpHeadersUtil.getHttpHeadersJson());
             HttpEntity<Task> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.PUT, requestEntity, Task.class);
             return response.getBody();
 
@@ -67,7 +72,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public Task getUserById(long id) {
+    public Task getTaskById(long id) {
         try {
             HttpEntity<Task> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.GET, null, Task.class);
             return response.getBody();
@@ -81,7 +86,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public List<Task> getAll() {
         try {
-            HttpEntity<Task> entity = new HttpEntity<>(null, getHttpHeaders());
+            HttpEntity<Task> entity = new HttpEntity<>(null, httpHeadersUtil.getHttpHeadersJson());
             ResponseEntity<List<Task>> response = restTemplate.exchange(urlMain + customUrl, HttpMethod.GET, entity, new ParameterizedTypeReference<List<Task>>() {
             });
 
@@ -92,11 +97,32 @@ public class TaskServiceImpl implements TaskService {
         }
         return null;
     }
+    @Override
+    public List<Task> getTaskByIds(List<Integer> ids){
+        try {
+            String where = formatCriteriaIn(ids);
+            HttpEntity<Task> entity = new HttpEntity<>(null, httpHeadersUtil.getHttpHeadersJson());
+            ResponseEntity<List<Task>> response = restTemplate.exchange(urlMain + customUrl + "?" +where, HttpMethod.GET, entity, new ParameterizedTypeReference<List<Task>>() {
+            });
 
-    private HttpHeaders getHttpHeaders() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-Type", MediaType.APPLICATION_JSON_VALUE);
-        headers.add("Authorization", "Bearer " + jwtToken);
-        return headers;
+            List<Task> list = response.getBody();
+            return list;
+        } catch (Exception t) {
+            logger.error(t.toString());
+        }
+        return null;
     }
+
+    private String formatCriteriaIn(List<Integer> ids){
+        String text = "";
+        for(Integer id : ids){
+            text +=String.format("id_in=%s&", id);
+        }
+        if(text.length() > 0){
+            text += "_sort=id:ASC";
+        }
+        return text;
+    }
+
+
 }

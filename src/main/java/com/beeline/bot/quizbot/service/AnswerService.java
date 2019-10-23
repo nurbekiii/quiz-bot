@@ -2,6 +2,7 @@ package com.beeline.bot.quizbot.service;
 
 
 import com.beeline.bot.quizbot.entity.Answer;
+import com.beeline.bot.quizbot.entity.TaskFilter;
 
 import java.util.List;
 
@@ -16,7 +17,9 @@ public interface AnswerService {
 
     Answer update(Answer task);
 
-    Answer getUserById(long id);
+    Answer getAnswerById(long id);
 
     List<Answer> getAll();
+
+    List<Answer> getAnswersByFilter(TaskFilter filter);
 }
