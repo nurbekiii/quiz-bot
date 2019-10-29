@@ -3,12 +3,10 @@ package com.beeline.bot.quizbot.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -180,7 +178,7 @@ public class User implements Serializable {
     }
 
     public void addTask(Task task) {
-        if(tasks == null){
+        if (tasks == null) {
             tasks = new ArrayList<>();
         }
         this.tasks.remove(task);

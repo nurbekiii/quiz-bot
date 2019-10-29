@@ -2,7 +2,6 @@ package com.beeline.bot.quizbot.service;
 
 
 import com.beeline.bot.quizbot.entity.Task;
-import com.beeline.bot.quizbot.entity.TaskFilter;
 
 import java.util.List;
 

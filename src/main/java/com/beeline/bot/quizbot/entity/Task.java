@@ -21,6 +21,7 @@ public class Task implements Serializable {
     private String code;
     private String result;
     private Integer order;
+    private Integer point;
 
     @JsonProperty(value = "same_task_id")
     private Integer sameTaskId;
@@ -42,18 +43,27 @@ public class Task implements Serializable {
 
     }
 
-    public Task(Integer id, String title, String description, String code, String result, Integer order, Integer sameTaskId, String fileId, String fileType, List<FileEx> attachments, boolean isFinished) {
+    public Task(Integer id, String title, String description, String code, String result, Integer order, Integer point, Integer sameTaskId, String fileId, String fileType, List<FileEx> attachments, boolean isFinished) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.code = code;
         this.result = result;
         this.order = order;
+        this.point = point;
         this.sameTaskId = sameTaskId;
         this.fileId = fileId;
         this.fileType = fileType;
         this.attachments = attachments;
         this.isFinished = isFinished;
+    }
+
+    public Integer getPoint() {
+        return point;
+    }
+
+    public void setPoint(Integer point) {
+        this.point = point;
     }
 
     public String getFileId() {

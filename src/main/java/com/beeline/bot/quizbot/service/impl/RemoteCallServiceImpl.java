@@ -3,11 +3,11 @@ package com.beeline.bot.quizbot.service.impl;
 import com.beeline.bot.quizbot.service.RemoteCallService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.*;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.net.URI;
 import java.util.List;
 
 /**
@@ -34,7 +34,7 @@ public class RemoteCallServiceImpl<T> implements RemoteCallService<T> {
     }
 
     @Override
-    public T sendPutRequest(String url, Object req, Class<T> class1)  throws Exception {
+    public T sendPutRequest(String url, Object req, Class<T> class1) throws Exception {
         //HttpEntity<T> request = new HttpEntity<T>(req, getHttpHeaders());
         //restTemplate.put(url, request);
 
@@ -42,7 +42,7 @@ public class RemoteCallServiceImpl<T> implements RemoteCallService<T> {
     }
 
     @Override
-    public T sendGetRequest(String url, Object req,  Class<T> class1)  throws Exception {
+    public T sendGetRequest(String url, Object req, Class<T> class1) throws Exception {
         /*HttpEntity<T> request = new HttpEntity<>(req, getHttpHeaders());
         ResponseEntity<T> response = restTemplate.getForEntity(url, class1, request);
         HttpStatus httpCode = response.getStatusCode();
@@ -72,14 +72,13 @@ public class RemoteCallServiceImpl<T> implements RemoteCallService<T> {
     }
 
     @Override
-    public T getSimpleObject(String url, Class<T> class1)  throws Exception {
+    public T getSimpleObject(String url, Class<T> class1) throws Exception {
         /*ResponseEntity<T> response = restTemplate.exchange(new URI(url), HttpMethod.GET, null, class1);
         Resp result = response.getBody();
         return result;*/
 
         return null;
     }
-
 
 
 }

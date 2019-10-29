@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
  */
 @JsonIgnoreProperties(ignoreUnknown = true, value = {"created_at", "updated_at", "sha256", "provider", "size", "public_id"})
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
-public class Image implements Serializable {
+public class FileEx implements Serializable {
     private Long id;
     private String name;
 
@@ -42,11 +42,11 @@ public class Image implements Serializable {
     @JsonProperty(value = "updated_at")
     private LocalDateTime updatedAt;
 
-    public Image() {
+    public FileEx() {
 
     }
 
-    public Image(Long id, String name, String ext, String mime, String url, String sha256, String provider, String size, String public_id, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public FileEx(Long id, String name, String ext, String mime, String url, String sha256, String provider, String size, String public_id, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.name = name;
         this.ext = ext;

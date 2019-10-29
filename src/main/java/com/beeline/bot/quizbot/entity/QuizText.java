@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 /**
  * @author NIsaev on 01.10.2019
  */
-@JsonIgnoreProperties(ignoreUnknown = true, value = { "created_at", "updated_at"})
+@JsonIgnoreProperties(ignoreUnknown = true, value = {"created_at", "updated_at"})
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 public class QuizText implements Serializable {
 
@@ -28,7 +28,7 @@ public class QuizText implements Serializable {
     @JsonIgnore
     private LocalDateTime updatedAt;
 
-    public QuizText(){
+    public QuizText() {
 
     }
 

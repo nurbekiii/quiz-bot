@@ -12,7 +12,7 @@ import java.io.Serializable;
 /**
  * @author NIsaev on 03.10.2019
  */
-@JsonIgnoreProperties(ignoreUnknown = true, value = { "created_at", "updated_at"})
+@JsonIgnoreProperties(ignoreUnknown = true, value = {"created_at", "updated_at"})
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 public class Answer implements Serializable {
     private Integer id;
@@ -39,17 +39,20 @@ public class Answer implements Serializable {
     @JsonProperty(value = "task_name")
     private String taskName;
 
+    @JsonProperty(value = "tlg_file_id")
+    private String tlgFileId;
+
     @JsonProperty(value = "file_answer")
     private JsonNode fileAnswer;
 
-    private byte [] fileContent;
+    private byte[] fileContent;
     private File answerFile;
 
-    public Answer(){
+    public Answer() {
 
     }
 
-    public Answer(Integer id, String email, String owner, String comment, String textAnswer, String taskCategory, Integer userId, Integer taskId, Integer taskLevel, String taskName, Integer point, JsonNode fileAnswer) {
+    public Answer(Integer id, String email, String owner, String comment, String textAnswer, String taskCategory, Integer userId, Integer taskId, Integer taskLevel, String taskName, String tlgFileId, Integer point, JsonNode fileAnswer) {
         this.id = id;
         this.email = email;
         this.owner = owner;
@@ -60,6 +63,7 @@ public class Answer implements Serializable {
         this.taskId = taskId;
         this.taskLevel = taskLevel;
         this.taskName = taskName;
+        this.tlgFileId = tlgFileId;
         this.point = point;
         this.fileAnswer = fileAnswer;
     }
@@ -142,6 +146,14 @@ public class Answer implements Serializable {
 
     public void setTaskName(String taskName) {
         this.taskName = taskName;
+    }
+
+    public String getTlgFileId() {
+        return tlgFileId;
+    }
+
+    public void setTlgFileId(String tlgFileId) {
+        this.tlgFileId = tlgFileId;
     }
 
     public Integer getPoint() {

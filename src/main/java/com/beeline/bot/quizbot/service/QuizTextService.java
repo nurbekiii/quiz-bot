@@ -1,7 +1,6 @@
 package com.beeline.bot.quizbot.service;
 
 import com.beeline.bot.quizbot.entity.QuizText;
-import com.beeline.bot.quizbot.entity.QuizText;
 
 import java.util.List;
 

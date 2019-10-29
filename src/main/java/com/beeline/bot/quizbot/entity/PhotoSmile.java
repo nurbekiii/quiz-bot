@@ -24,7 +24,7 @@ public class PhotoSmile implements Serializable {
     private String username;
     private String owner;
 
-    private byte [] imageContent;
+    private byte[] imageContent;
     private File imageFile;
 
     @JsonIgnore

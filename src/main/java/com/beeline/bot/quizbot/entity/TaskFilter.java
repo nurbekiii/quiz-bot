@@ -8,7 +8,7 @@ public class TaskFilter {
     private Integer task_level;
     private String task_category;
 
-    public TaskFilter(){
+    public TaskFilter() {
 
     }
 
