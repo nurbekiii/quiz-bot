@@ -121,6 +121,4 @@ public class PhotoSmileServiceImpl implements PhotoSmileService {
         }
         return null;
     }
-
-
 }

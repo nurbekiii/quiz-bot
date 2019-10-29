@@ -64,7 +64,6 @@ public class QuizTextServiceImpl implements QuizTextService {
             HttpEntity<QuizText> requestEntity = new HttpEntity<>(quiz, httpHeadersUtil.getHttpHeadersJson());
             HttpEntity<QuizText> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.PUT, requestEntity, QuizText.class);
             return response.getBody();
-
         } catch (Exception t) {
             logger.error(t.toString());
         }
@@ -76,7 +75,6 @@ public class QuizTextServiceImpl implements QuizTextService {
         try {
             HttpEntity<QuizText> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.GET, null, QuizText.class);
             return response.getBody();
-
         } catch (Exception t) {
             logger.error(t.toString());
         }

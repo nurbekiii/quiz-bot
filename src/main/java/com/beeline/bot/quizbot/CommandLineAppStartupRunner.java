@@ -108,6 +108,31 @@ public class CommandLineAppStartupRunner {
     @Autowired
     private AnswerService answerService;
 
+
+    @Autowired
+    private RemoteCallService<QuizText> remoteQuizTextService;
+
+    @Value("${tlg.bot_token}")
+    private String BOT_TOKEN;
+
+    @Value("${tlg.local_temp.folder}")
+    private String TEMP_FOLDER;
+
+    @Value("${rest.url_uploads}")
+    private String urlUploads;
+
+
+    @Value("${rest.url_main}")
+    private String urlMain;
+
+    @Value("${rest.jwt_token}")
+    private String jwtToken;
+
+    private String customUrl = "quiztexts/";
+
+
+    private TelegramBot bot;
+
     @PostConstruct
     public void init() {
         usersCache = new HashMap<>();
@@ -144,23 +169,14 @@ public class CommandLineAppStartupRunner {
 
     }
 
-    @Value("${tlg.bot_token}")
-    private String BOT_TOKEN;
-
-    @Value("${tlg.local_temp.folder}")
-    private String TEMP_FOLDER;
-
-    @Value("${rest.url_uploads}")
-    private String urlUploads;
-
-    private TelegramBot bot;
-
     @EventListener
     public void onApplicationEvent(ContextRefreshedEvent event) {
         bot = new TelegramBot(BOT_TOKEN);
         // Register for updates
         bot.setUpdatesListener(updates -> {
             try {
+              List<QuizText> listQuizes =  remoteQuizTextService.getAll(urlMain+ customUrl, QuizText.class);
+
                 if (updates != null) {
                     for (Update update : updates) {
                         Message message = update.message();

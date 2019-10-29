@@ -14,5 +14,15 @@ public interface RemoteCallService<T> {
 
     T getSimpleObject(String url, Class<T> class1) throws Exception;
 
-    List<T> getAll(String url, Class<T> class2) throws Exception;
+    List<T> getAll(String url, Class<T> class1) throws Exception;
+
+    T create(String url, T ent, Class<T> class1);
+
+    /*T save(T task);
+
+    T update(T task);
+
+    T getObjectById(Long id);
+
+    List<T> getAll();*/
 }

@@ -1,8 +1,13 @@
 package com.beeline.bot.quizbot.service.impl;
 
 import com.beeline.bot.quizbot.service.RemoteCallService;
+import com.beeline.bot.quizbot.util.HttpHeadersUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -17,8 +22,31 @@ import java.util.List;
 @Service
 public class RemoteCallServiceImpl<T> implements RemoteCallService<T> {
 
+    private static final Logger logger = LoggerFactory.getLogger(RemoteCallServiceImpl.class);
+
     @Autowired
     private RestTemplate restTemplate;
+
+    @Autowired
+    private HttpHeadersUtil httpHeadersUtil;
+
+    @Value("${rest.url_main}")
+    private String urlMain;
+
+    @Value("${rest.jwt_token}")
+    private String jwtToken;
+
+    @Override
+    public T create(String url, T ent, Class<T> class1) {
+        try {
+            HttpEntity<T> requestEntity = new HttpEntity<>(ent, httpHeadersUtil.getHttpHeadersJson());
+            HttpEntity<T> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, class1);
+            return response.getBody();
+        } catch (Exception t) {
+            logger.error(t.toString());
+        }
+        return null;
+    }
 
     @Override
     public T sendPostRequest(String url, Object req, Class<T> class1) throws Exception {
@@ -56,19 +84,17 @@ public class RemoteCallServiceImpl<T> implements RemoteCallService<T> {
 
     @Override
     public List<T> getAll(String url, Class<T> class1) throws Exception {
-        ResponseEntity<List<T>> response = restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<List<T>>() {
-        });
+        try {
+            HttpEntity<T> entity = new HttpEntity<>(null, httpHeadersUtil.getHttpHeadersJson());
+            ResponseEntity<List<T>> response = restTemplate.exchange(url, HttpMethod.GET, entity, new ParameterizedTypeReference<List<T>>() {
+            });
+            List<T> list = response.getBody();
 
-        List<T> list = response.getBody();
-        /*ObjectMapper mapper = new ObjectMapper();
-
-        List<Resp> list2 = mapper.convertValue(list, new TypeReference<Resp>() { });
-
-        List<Resp> list3 = mapper.convertValue(list, new TypeReference<List<Resp>>() { });
-
-        List<Resp> myObjects = mapper.convertValue(list, mapper.getTypeFactory().constructCollectionType(ArrayList.class, class1));*/
-
-        return list;
+            return list;
+        } catch (Exception t) {
+            logger.error(t.toString());
+        }
+        return null;
     }
 
     @Override
