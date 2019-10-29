@@ -65,44 +65,6 @@ public class AnswerServiceImpl implements AnswerService {
         return null;
     }
 
-    /*
-    @Override
-    public Answer create(Answer answer) {
-        try {
-            restTemplate.getMessageConverters().add(new FormHttpMessageConverter());
-            restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
-
-            Map<String, Object> form = new HashMap<>();
-            form.put("email", answer.getEmail());
-            form.put("owner", answer.getOwner());
-            form.put("comment", answer.getComment());
-            form.put("point", answer.getPoint());
-            form.put("task_category", answer.getTaskCategory());
-            form.put("text_answer", answer.getTextAnswer());
-            form.put("user_id", answer.getUserId());
-            form.put("task_id", answer.getTaskId());
-            form.put("task_level", answer.getTaskLevel());
-            form.put("task_name", answer.getTaskName());
-            form.put("tlg_file_id", answer.getTlgFileId());
-            form.put("task_id", answer.getTaskId());
-
-            String name = (answer.getAnswerFile() != null ? answer.getAnswerFile().getName() : null);
-
-            MultiValueMap<String, Object> form3 = new LinkedMultiValueMap<>();
-            form3.add("data", form);
-            form3.add("files.file_answer", name == null ? null : new FileNameAwareByteArrayResource(name, answer.getFileContent(), null));
-
-            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(form3, httpHeadersUtil.getHttpHeadersMultiPart());
-
-            HttpEntity<Answer> response = restTemplate.exchange(urlMain + customUrl, HttpMethod.POST, requestEntity, Answer.class);
-            return response.getBody();
-        } catch (Exception t) {
-            logger.error(t.toString());
-        }
-        return null;
-    }
-    */
-
     @Override
     public Answer update(Answer answer) {
         try {
