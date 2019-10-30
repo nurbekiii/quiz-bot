@@ -57,7 +57,7 @@ public class CommandLineAppStartupRunner {
     private String titleEx = "title";
     private String CUR_LEVEL = "CUR_LEVEL";
 
-    private final String helpBtn = ":wrench: Help";// EmojiParser.parseToUnicode(":wrench: Help");
+    private final String helpBtn = ":wrench: Help";
     private final String commentBtn = ":memo: Комментарий"; //comment_btn
     private final String competBtn = ":shield: Компетенции";
     private final String myResultBtn = ":bank: Мой результат";
