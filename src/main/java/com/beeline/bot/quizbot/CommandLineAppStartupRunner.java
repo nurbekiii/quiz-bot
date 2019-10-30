@@ -38,9 +38,6 @@ import java.util.stream.Collectors;
 public class CommandLineAppStartupRunner {
     private static final Logger LOG = LoggerFactory.getLogger(CommandLineAppStartupRunner.class);
 
-    private static final Pattern PATTERN = Pattern.compile("(\\(\\d{2}|d{3}\\%\\))");
-
-    //private List<User> userList;
     private Map<Integer, User> usersCache;
 
     private String client_full_name = "client_full_name";
@@ -108,10 +105,6 @@ public class CommandLineAppStartupRunner {
     @Autowired
     private AnswerService answerService;
 
-
-    @Autowired
-    private RemoteCallService<QuizText> remoteQuizTextService;
-
     @Value("${tlg.bot_token}")
     private String BOT_TOKEN;
 
@@ -120,16 +113,6 @@ public class CommandLineAppStartupRunner {
 
     @Value("${rest.url_uploads}")
     private String urlUploads;
-
-
-    @Value("${rest.url_main}")
-    private String urlMain;
-
-    @Value("${rest.jwt_token}")
-    private String jwtToken;
-
-    private String customUrl = "quiztexts/";
-
 
     private TelegramBot bot;
 
@@ -175,8 +158,6 @@ public class CommandLineAppStartupRunner {
         // Register for updates
         bot.setUpdatesListener(updates -> {
             try {
-              List<QuizText> listQuizes =  remoteQuizTextService.getAll(urlMain+ customUrl, QuizText.class);
-
                 if (updates != null) {
                     for (Update update : updates) {
                         Message message = update.message();
@@ -225,8 +206,6 @@ public class CommandLineAppStartupRunner {
                                     User usr = processAnswers(chatId, newUser, message, repMessId);
                                     if (usr == null) {
                                         newUser = askInputAnswer(chatId, newUser);
-                                        //newUser = drawTaskButtons(chatId, newUser, newUser.getTempAttr(titleEx).toString());
-                                        //newUser = handleButtonTask(chatId, newUser, newUser.getTempAttr(titleEx).toString());
                                     }
                                 }
                             }
@@ -244,13 +223,11 @@ public class CommandLineAppStartupRunner {
                                     String text2 = text.substring(0, text.indexOf("[") - 1);
                                     if (quizButtonsList.contains(text2)) {
                                         newUser = drawTaskButtons(chatId, newUser, text2);
-                                        //newUser = handleButtonTask(chatId, newUser, text2);//FIFTH CHANGE
                                     }
                                 }
 
                                 if (quizButtonsList.contains(text)) {
                                     newUser = drawTaskButtons(chatId, newUser, text);
-                                    //newUser = handleButtonTask(chatId, newUser, text);//FIFTH CHANGE
                                 }
 
                                 //кнопки
@@ -741,34 +718,6 @@ public class CommandLineAppStartupRunner {
         return newAnswer;
     }
 
-    private int getCountTasks(List<Task> tasks, String catName) {
-        if (tasks != null && !tasks.isEmpty()) {
-            return (int) tasks.stream().filter(tsk -> tsk.getTitle().equals(catName) && tsk.isFinished()).count();
-        }
-        return 0;
-    }
-
-    private int getUnfininshedTaskLevel(List<Task> tasks, String catName) {
-        if (tasks != null && !tasks.isEmpty()) {
-            int num = (int) tasks.stream().filter(tsk -> tsk.getTitle().equals(catName) && tsk.isFinished()).count();
-            if (num >= 3)
-                return 4;
-
-            num = (int) tasks.stream().filter(tsk -> tsk.getTitle().equals(catName) && tsk.isFinished() && tsk.getOrder() == 1).count();
-            if (num == 0)
-                return 1;
-
-            num = (int) tasks.stream().filter(tsk -> tsk.getTitle().equals(catName) && tsk.isFinished() && tsk.getOrder() == 2).count();
-            if (num == 0)
-                return 2;
-
-            num = (int) tasks.stream().filter(tsk -> tsk.getTitle().equals(catName) && tsk.isFinished() && tsk.getOrder() == 3).count();
-            if (num == 0)
-                return 3;
-        }
-        return 1;
-    }
-
     private User sendQuizChoice(long chatId, User newUser, String msg) {
         String[][] res = new String[][]{
                 new String[]{QUIZ_BTN1, QUIZ_BTN2, QUIZ_BTN3},
@@ -835,63 +784,6 @@ public class CommandLineAppStartupRunner {
         return "";
     }
 
-    /*
-    private User handleButtonTask(Long chatId, User user, String title) {
-        String title1 = getClearText(title, true);
-
-        //tasks from DB
-        if (!(user.getTasks() != null && !user.getTasks().isEmpty())) {
-            List<Task> tasksList = getFinishedTasks(user.getId());
-            user.setTasks(tasksList);
-        }
-
-        int level = getUnfininshedTaskLevel(user.getTasks(), title1);
-        String level_message_id = level1_message_id;
-        if (level == 2) {
-            level_message_id = level2_message_id;
-        }
-        if (level == 3) {
-            level_message_id = level3_message_id;
-        }
-        //уже выполнен
-        if (level == 4) {
-            String text = getTextByCode("tasks_done");
-            sendEmojiText(chatId, text + " :point_down:");
-            return user;
-        }
-
-        Task task = getTaskByTitleLevel(title1, level);
-        String description = task.getDescription();
-        if (task.getFileId() != null) {
-            String files[] = task.getFileId().split(",");
-            String type = task.getFileType();
-
-            for (String fileId : files) {
-                if (type.equals("photo")) {
-                    SendPhoto photo = new SendPhoto(chatId, fileId.trim());
-                    bot.execute(photo);
-                } else {
-                    SendDocument document = new SendDocument(chatId, fileId.trim());
-                    bot.execute(document);
-                }
-            }
-        }
-
-        String expFormat = getTextByCode("exp_format"); //Ожидаемый формат:
-        String txtPoint = getTextByCode("task_points_given"); // Баллы за задание
-        String format = (task.getResult() != null ? task.getResult().toLowerCase() : "");
-        String point = (task.getPoint() != null ? ("\n\r\n\r" + txtPoint + ": " + task.getPoint() + " :moneybag::moneybag:") : "");
-
-        int messId = sendEmojiForceReply(chatId, ":green_book:" + description + "\n\r\n\r[:bellhop_bell: " + expFormat + ":  " + format + " :pushpin:]" + point);
-
-        user.setTempAttr(titleEx, title1);
-        user.setTempAttr(level_message_id, messId);
-        user.addTask(task);
-        //user = changeProps(user); //FIFTH CHANGE
-        return user;
-    }
-    */
-
     private String getTaskDescription(Task task) {
         String description = task.getDescription();
         String expFormat = getTextByCode("exp_format"); //Ожидаемый формат:
@@ -900,7 +792,6 @@ public class CommandLineAppStartupRunner {
         String point = (task.getPoint() != null ? ("\n\r[" + txtPoint + ": " + task.getPoint() + " :moneybag::moneybag: ]") : "");
 
         return (":green_book:" + description + "\n\r\n\r[:bellhop_bell: " + expFormat + ":  " + format + " :pushpin:]" + point);
-
     }
 
     private User handleButtonTaskNew(Long chatId, User user, String title, int lev) {
@@ -992,7 +883,6 @@ public class CommandLineAppStartupRunner {
         sendEmojiText(chatId, ":moneybag: " + mess + ": " + points);
     }
 
-
     private User inputCommentRequest(long chatId, User user) {
         String msg = getTextByCode("comment_input");//"Введите комментарий";
         int messId = sendEmojiForceReply(chatId, ":point_up: :keyboard:" + msg);
@@ -1053,76 +943,6 @@ public class CommandLineAppStartupRunner {
         return userService.save(user);
     }
 
-    private User checkMe(User user) {
-        System.out.println("checkMe STARTED");
-        List<User> list = userService.getAllUsers();
-        if (list != null && list.size() > 0) {
-            for (User usr : list) {
-                if (usr.getTlgId() != null && usr.getTlgId().equals(user.getTlgId())) {
-                    //возвратим что есть
-                    if (usr.getTlgId() != null) {
-                        LOG.info("found user details");
-                        return usr;
-                    }
-
-                    //обновим в БД
-                    usr.setTlgUsername(user.getTlgUsername());
-                    usr.setTlgFirstname(user.getTlgFirstname());
-                    usr.setTlgLastname(user.getTlgLastname());
-                    usr.setPassword("12345");
-                    usr = userService.update(usr);
-                    LOG.info("found user details");
-                    return usr;
-                }
-            }
-        }
-
-        //создадим в БД Новую
-        User usr = new User();
-        usr.setUsername(user.getTlgUsername() != null ? user.getTlgUsername() : user.getTlgFirstname());
-        usr.setEmail((user.getTlgUsername() != null ? user.getTlgUsername() : "xyz" + System.currentTimeMillis()) + "@mail.xxx");
-        usr.setPassword("12345");
-
-        usr.setTlgId(user.getTlgId());
-        usr.setTlgUsername(user.getTlgUsername());
-        usr.setTlgFirstname(user.getTlgFirstname());
-        usr.setTlgLastname(user.getTlgLastname());
-
-        System.out.println("checkMe ENDED");
-        return userService.save(usr);
-    }
-
-    /*
-    private User checkUserInList(User user) {
-        for (User curUsr : userList) {
-            if (user.getId() == null) {
-                if (curUsr.getId() != null && curUsr.getTlgId().equals(user.getTlgId())) {
-                    return curUsr;
-                }
-            } else {
-                if (user.getId() != null && curUsr.getTlgId().equals(user.getTlgId())) {
-                    if (curUsr.getId() == null) {
-                        userList.remove(curUsr);
-                        userList.add(user);
-                        return user;
-                    }
-                    return curUsr;
-                }
-            }
-        }
-
-        for (User curUsr : userList) {
-            if (user.getTlgId().equals(curUsr.getTlgId())) {
-                return curUsr;
-            }
-        }
-
-        if (!userList.contains(user))
-            userList.add(user);
-
-        return user;
-    }
-    */
     private User checkUserInListEx(User user) {
         if (user.getId() == null) {
             for (Map.Entry<Integer, User> entry : usersCache.entrySet()) {
