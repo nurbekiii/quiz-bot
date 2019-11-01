@@ -811,7 +811,7 @@ public class CommandLineAppStartupRunner {
             String txt = getTaskDescription(task);
 
             String desc = getTextByCode("task_finished"); //finished
-            sendEmojiText(chatId, desc + " :love_you_gesture:" + "\n\r\n\r" + txt);
+            sendEmojiText(chatId,  ":white_check_mark: " + desc + " :white_check_mark:" + "\n\r\n\r" + txt);
             return user;
         }
 
