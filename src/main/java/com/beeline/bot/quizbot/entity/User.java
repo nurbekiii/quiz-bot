@@ -150,13 +150,17 @@ public class User implements Serializable {
         this.password = password;
     }
 
+    public void setTempAttrNull() {
+        this.tempAttr = null;
+    }
+
+    public void setTasksNull() {
+        this.tasks = null;
+    }
+
     @JsonIgnore
     public Map<String, Object> getTempAttr() {
         return tempAttr;
-    }
-
-    public void setTempAttrNull(Map<String, Object> tempAttr) {
-        this.tempAttr = tempAttr;
     }
 
     public void setTempAttr(Map<String, Object> tempAttr) {
@@ -174,7 +178,10 @@ public class User implements Serializable {
     }
 
     public void setTasks(List<Task> tasks) {
-        this.tasks = tasks;
+        if(tasks != null)
+            this.tasks = tasks;
+        else
+            this.tasks = new ArrayList<>();
     }
 
     public void addTask(Task task) {

@@ -60,7 +60,8 @@ public class AnswerServiceImpl implements AnswerService {
             HttpEntity<Answer> response = restTemplate.exchange(urlMain + customUrl, HttpMethod.POST, requestEntity, Answer.class);
             return response.getBody();
         } catch (Exception t) {
-            logger.error(t.toString());
+            t.printStackTrace();
+            logger.error("ERROR: " + t.toString());
         }
         return null;
     }
@@ -74,7 +75,8 @@ public class AnswerServiceImpl implements AnswerService {
             return response.getBody();
 
         } catch (Exception t) {
-            logger.error(t.toString());
+            t.printStackTrace();
+            logger.error("ERROR: " + t.toString());
         }
         return null;
     }
@@ -99,6 +101,7 @@ public class AnswerServiceImpl implements AnswerService {
         form.put("task_name", answer.getTaskName());
         form.put("tlg_file_id", answer.getTlgFileId());
         form.put("task_id", answer.getTaskId());
+        form.put("file_orig_name", answer.getFileOrigName());
 
         String name = (answer.getAnswerFile() != null ? answer.getAnswerFile().getName() : null);
 
@@ -117,7 +120,8 @@ public class AnswerServiceImpl implements AnswerService {
             return response.getBody();
 
         } catch (Exception t) {
-            logger.error(t.toString());
+            t.printStackTrace();
+            logger.error("ERROR: " + t.toString());
         }
         return null;
     }
@@ -132,7 +136,8 @@ public class AnswerServiceImpl implements AnswerService {
             List<Answer> list = response.getBody();
             return list;
         } catch (Exception t) {
-            logger.error(t.toString());
+            t.printStackTrace();
+            logger.error("ERROR: " + t.toString());
         }
         return null;
     }
@@ -149,7 +154,8 @@ public class AnswerServiceImpl implements AnswerService {
             List<Answer> list = response.getBody();
             return list;
         } catch (Exception t) {
-            logger.error(t.toString());
+            t.printStackTrace();
+            logger.error("ERROR: " + t.toString());
         }
         return null;
     }

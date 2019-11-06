@@ -46,14 +46,15 @@ public class UserServiceImpl implements UserService {
     public User create(User user) {
         try {
             User user2 = user;
-            user2.setTempAttrNull(null);
-            user2.setTasks(null);
+            user2.setTempAttrNull();
+            user2.setTasksNull();
 
             HttpEntity<User> requestEntity = new HttpEntity<>(user2, httpHeadersUtil.getHttpHeadersJson());
             HttpEntity<User> response = restTemplate.exchange(urlMain + customUrl, HttpMethod.POST, requestEntity, User.class);
             return response.getBody();
 
         } catch (Exception t) {
+            t.printStackTrace();
             logger.error(t.toString());
         }
         return null;
@@ -63,11 +64,15 @@ public class UserServiceImpl implements UserService {
     public User update(User user) {
         try {
             int id = user.getId();
+            //user.setTempAttrNull();
+            //user.setTasksNull();
+
             HttpEntity<User> requestEntity = new HttpEntity<>(user, httpHeadersUtil.getHttpHeadersJson());
             HttpEntity<User> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.PUT, requestEntity, User.class);
             return response.getBody();
 
         } catch (Exception t) {
+            t.printStackTrace();
             logger.error(t.toString());
         }
         return null;
@@ -85,6 +90,7 @@ public class UserServiceImpl implements UserService {
                 return list.get(0);
 
         } catch (Exception t) {
+            t.printStackTrace();
             logger.error(t.toString());
         }
         return null;
@@ -102,6 +108,7 @@ public class UserServiceImpl implements UserService {
                 return list.get(0);
 
         } catch (Exception t) {
+            t.printStackTrace();
             logger.error(t.toString());
         }
         return null;
@@ -111,12 +118,14 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<User> getAllUsers() {
         try {
-            ResponseEntity<List<User>> response = restTemplate.exchange(urlMain + customUrl, HttpMethod.GET, null, new ParameterizedTypeReference<List<User>>() {
+            HttpEntity<User> entity = new HttpEntity<>(null, httpHeadersUtil.getHttpHeadersJson());
+            ResponseEntity<List<User>> response = restTemplate.exchange(urlMain + customUrl, HttpMethod.GET, entity, new ParameterizedTypeReference<List<User>>() {
             });
 
             List<User> list = response.getBody();
             return list;
         } catch (Exception t) {
+            t.printStackTrace();
             logger.error(t.toString());
         }
         return null;
