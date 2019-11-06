@@ -76,7 +76,8 @@ public class UserCommentServiceImpl implements UserCommentService {
     @Override
     public UserComment getUserCommentById(long id) {
         try {
-            HttpEntity<UserComment> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.GET, null, UserComment.class);
+            HttpEntity<UserComment> requestEntity = new HttpEntity<>(null, httpHeadersUtil.getHttpHeadersJson());
+            HttpEntity<UserComment> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.GET, requestEntity, UserComment.class);
             return response.getBody();
 
         } catch (Exception t) {
@@ -101,6 +102,4 @@ public class UserCommentServiceImpl implements UserCommentService {
         }
         return null;
     }
-
-
 }

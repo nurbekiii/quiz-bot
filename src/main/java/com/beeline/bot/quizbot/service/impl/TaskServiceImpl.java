@@ -76,7 +76,8 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public Task getTaskById(long id) {
         try {
-            HttpEntity<Task> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.GET, null, Task.class);
+            HttpEntity<Task> entity = new HttpEntity<>(null, httpHeadersUtil.getHttpHeadersJson());
+            HttpEntity<Task> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.GET, entity, Task.class);
             return response.getBody();
 
         } catch (Exception t) {

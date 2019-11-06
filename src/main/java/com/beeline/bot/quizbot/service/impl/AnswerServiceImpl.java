@@ -116,7 +116,8 @@ public class AnswerServiceImpl implements AnswerService {
     @Override
     public Answer getAnswerById(long id) {
         try {
-            HttpEntity<Answer> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.GET, null, Answer.class);
+            HttpEntity<Answer> entity = new HttpEntity<>(null, httpHeadersUtil.getHttpHeadersJson());
+            HttpEntity<Answer> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.GET, entity, Answer.class);
             return response.getBody();
 
         } catch (Exception t) {
@@ -146,7 +147,6 @@ public class AnswerServiceImpl implements AnswerService {
     public List<Answer> getAnswersByFilter(TaskFilter filter) {
         try {
             String params = formatCriteria(filter);
-
             HttpEntity<Answer> entity = new HttpEntity<>(null, httpHeadersUtil.getHttpHeadersJson());
             ResponseEntity<List<Answer>> response = restTemplate.exchange(urlMain + customUrl + "?" + params, HttpMethod.GET, entity, new ParameterizedTypeReference<List<Answer>>() {
             });
@@ -169,5 +169,4 @@ public class AnswerServiceImpl implements AnswerService {
 
         return String.format("user_id=%s&task_level=%s&task_category=%s&_sort=id:DESC", filter.getUser_id(), filter.getTask_level(), filter.getTask_category());
     }
-
 }

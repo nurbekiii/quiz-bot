@@ -304,12 +304,6 @@ public class CommandLineAppStartupRunner {
             int lev = i;
             int num = (int) tasks.stream().filter(tsk -> tsk.getTitle().equals(title1) && tsk.isFinished() && tsk.getOrder().equals(lev)).count();
             resFin[i - 1] = num;
-            /*int num = 0;
-            for (Task tsk : tasks) {
-                if (tsk.getTitle().equals(title1) && tsk.isFinished() && tsk.getOrder().intValue() == lev)
-                    num = 1;
-            }
-            resFin[i - 1] = num;*/
         }
 
         String str1 = ":green_heart: ", str2 = ":yellow_heart: ";
@@ -541,7 +535,7 @@ public class CommandLineAppStartupRunner {
                 String res[][] = new String[][]{new String[]{EmojiParser.parseToUnicode(competBtn), EmojiParser.parseToUnicode(commentBtn), EmojiParser.parseToUnicode(myResultBtn), EmojiParser.parseToUnicode(helpBtn)}};
                 showButtons(chatId, (msg + " :point_down:"), res);
                 return newUser;
-            }else{
+            } else {
                 return firstTaskRequest(chatId, newUser);
             }
         }
@@ -564,7 +558,7 @@ public class CommandLineAppStartupRunner {
 
     private User setFirstName(long chatId, User newUser, String clientName) {
         newUser.setTempAttr(client_full_name, clientName);
-        if(newUser.getPoints() == null || newUser.getPoints().intValue() <= 150)
+        if (newUser.getPoints() == null || newUser.getPoints().intValue() <= 150)
             newUser.setPoints(150);
         newUser.setTlgFullname(clientName);
         newUser = changeProps(newUser);  //SECOND CHANGE
