@@ -682,6 +682,8 @@ public class CommandLineAppStartupRunner {
 
         //Finished tasks
         List<Task> tasks = getFinishedTasks(newUser.getId());
+        newUser.setTasks(tasks);
+        newUser = checkUserInListEx(newUser);
 
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
@@ -694,8 +696,8 @@ public class CommandLineAppStartupRunner {
                         int rs = (int) tasks.stream().filter(tsk -> tsk.getOrder() != null && tsk.getOrder().equals(level) && tsk.getTitle().equals(name)).count();
                         if (rs > 0) {
                             /////for cache
-                            Task task = tasks.stream().filter(tsk -> tsk.getOrder() != null && tsk.getOrder().equals(level) && tsk.getTitle().equals(name)).collect(Collectors.toList()).get(0);
-                            newUser.addTask(task);
+                            //Task task = tasks.stream().filter(tsk -> tsk.getOrder() != null && tsk.getOrder().equals(level) && tsk.getTitle().equals(name)).collect(Collectors.toList()).get(0);
+                            //newUser.addTask(task);
                             ////
                             taskRes += ":green_heart:";
                         } else {
@@ -913,6 +915,10 @@ public class CommandLineAppStartupRunner {
                     return user;
                 }
             } else {
+                usersCache.put(user.getId(), user);
+                return user;
+            }
+            if(!user.getTasks().isEmpty() && user.getTasks().size() > 0){
                 usersCache.put(user.getId(), user);
                 return user;
             }
