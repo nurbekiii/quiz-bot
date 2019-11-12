@@ -57,7 +57,7 @@ public class CommandLineAppStartupRunner {
     private String titleEx = "title";
     private String CUR_LEVEL = "CUR_LEVEL";
 
-    private final String helpBtn = ":wrench: Help";// EmojiParser.parseToUnicode(":wrench: Help");
+    private final String helpBtn = ":wrench: Help";
     private final String commentBtn = ":memo: Комментарий"; //comment_btn
     private final String competBtn = ":shield: Компетенции";
     private final String myResultBtn = ":bank: Мой результат";
@@ -185,7 +185,7 @@ public class CommandLineAppStartupRunner {
                                 if (newUser.getTempAttr(client_full_name) == null && repMessId.equals(newUser.getTempAttr(ask_name_message_id))) {
                                     //first name
                                     newUser = setFirstName(chatId, newUser, message.text());
-                                } else if (newUser.getTempAttr(client_full_name) != null && repMessId.equals(newUser.getTempAttr(task1_message_id))) {
+                                } else if (/*newUser.getTempAttr(client_full_name) != null &&*/ repMessId.equals(newUser.getTempAttr(task1_message_id))) {
                                     //error in first task
                                     if (message.photo() == null && (message.text() != null || message.document() != null)) {
                                         String msg = getTextByCode("answer_format_error");
@@ -297,10 +297,12 @@ public class CommandLineAppStartupRunner {
 
     private User drawTaskButtons(Long chatId, User newUser, String title) {
         String title1 = getClearText(title, true);
+        List<Task> tasks = newUser.getTasks().stream().filter(tsk -> tsk.getTitle().equals(title1) && tsk.isFinished()).collect(Collectors.toList());
+
         int resFin[] = new int[]{0, 0, 0};
         for (int i = 1; i < 4; i++) {
             int lev = i;
-            int num = (int) newUser.getTasks().stream().filter(tsk -> tsk.getTitle().equals(title1) && tsk.isFinished() && tsk.getOrder().equals(lev)).count();
+            int num = (int) tasks.stream().filter(tsk -> tsk.getTitle().equals(title1) && tsk.isFinished() && tsk.getOrder().equals(lev)).count();
             resFin[i - 1] = num;
         }
 
@@ -318,7 +320,7 @@ public class CommandLineAppStartupRunner {
 
 
         String msg = getTextByCode("compet_tasks");
-        showButtons(chatId, msg + " " + title1, res);
+        showButtons(chatId, msg + " " + title1 + " :point_down:", res);
 
         newUser.setTempAttr(titleEx, title1);
         return newUser;
@@ -328,9 +330,16 @@ public class CommandLineAppStartupRunner {
         return EmojiParser.parseFromUnicode(input, e -> ":" + e.getEmoji().getAliases().get(0) + ":");
     }
 
+    private boolean hasUserData(User newUser) {
+        return (newUser != null && newUser.getTlgFullname() != null && newUser.getPoints() != null);
+    }
+
     private User senQuizSelect(Long chatId, User newUser) {
+        if (!hasUserData(newUser)) {
+            return startAction(chatId, newUser);
+        }
+
         String msg = getTextByCode("select_quiz"); //Выберите компетенцию
-        //List<Task> userTasks = newUser.getTasks().stream().filter(tsk -> !tsk.getCode().equals(FIRST_TASK)).collect(Collectors.toList());
         return sendQuizChoice(chatId, newUser, msg);
     }
 
@@ -352,8 +361,8 @@ public class CommandLineAppStartupRunner {
         Sticker sticker = message.sticker();
         Animation animation = message.animation();
         PhotoSize sizes[] = message.photo();
-        Task task = (newUser.getTasks().get(newUser.getTasks().size() - 1));
 
+        Task task = (newUser.getTasks().get(newUser.getTasks().size() - 1));
 
         boolean hasText = false, hasDoc = false, hasPdf = false, hasPhoto = false;
         String resultTypes = task.getResult().toLowerCase();
@@ -392,18 +401,39 @@ public class CommandLineAppStartupRunner {
         boolean isLev3 = repMessId.equals(newUser.getTempAttr(level3_message_id) != null ? newUser.getTempAttr(level3_message_id) : -1);
 
         String fileId = (sizes != null ? sizes[0].fileId() : null);
-        if (doc != null)
+        String fileName = "";
+        int size = 0;
+        if (doc != null) {
             fileId = doc.fileId();
-        else if (audio != null)
+            size = doc.fileSize();
+            fileName = doc.fileName();
+        } else if (audio != null) {
             fileId = audio.fileId();
-        else if (voice != null)
+            size = audio.fileSize();
+            fileName = audio.title();
+        } else if (voice != null) {
             fileId = voice.fileId();
-        else if (video != null)
+            size = voice.fileSize();
+            //fileName = doc.fileName(); ///?????
+        } else if (video != null) {
             fileId = video.fileId();
-        else if (animation != null)
+            size = video.fileSize();
+            //fileName = doc.fileName(); //?????
+        } else if (animation != null) {
             fileId = animation.fileId();
-        else if (sticker != null)
+            size = animation.fileSize();
+            fileName = animation.fileName();
+        } else if (sticker != null) {
             fileId = sticker.fileId();
+            size = sticker.fileSize();
+            fileName = sticker.setName();
+        }
+        int sizes1 = (int) (size / 1024);
+        if (sizes1 > 100000) {
+            String msg = getTextByCode("size_limit"); //Вы отправили файл большого размера.
+            sendEmojiText(chatId, ":scream_cat: " + msg + ":  " + resultTypes + " :blue_book:");
+            return null;
+        }
 
         int nextLevel = (isLev1 && !isLev2 ? 2 : (isLev2 && !isLev3 ? 3 : (isLev3 ? 4 : 4)));
 
@@ -423,7 +453,7 @@ public class CommandLineAppStartupRunner {
         }
 
         //запись ответа в БД
-        Answer newAnswer = handleLevelAnswer(newUser, task, task2, answer, fileId, (nextLevel == 2 ? "easy level" : null));
+        Answer newAnswer = handleLevelAnswer(newUser, task, task2, answer, fileId, null, fileName);
         if (nextLevel == 2) {
             //Поздравляем, ты заработал(-ла) 100 баллов! Ты можешь оставаться в этой компетенции или выбрать другую.
             boolean hasDuplicateTask = (task2 != null);
@@ -457,7 +487,7 @@ public class CommandLineAppStartupRunner {
         return newUser;
     }
 
-    private Answer handleLevelAnswer(User newUser, Task task, Task task2, String textAnswer, String fileId, String comment) {
+    private Answer handleLevelAnswer(User newUser, Task task, Task task2, String textAnswer, String fileId, String comment, String fileName) {
         java.io.File fl = null;
         byte[] bytes = null;
         try {
@@ -469,60 +499,10 @@ public class CommandLineAppStartupRunner {
             t.printStackTrace();
         }
 
-        /*Integer userId = newUser.getId();
-        String username = newUser.getUsername();
-        String email = newUser.getEmail();
-        int taskId = task.getId();
-        int level = task.getOrder();
-        String taskCategory = task.getTitle();
-        String desc = task.getDescription();
-
-        Answer answer = new Answer();
-        answer.setUserId(userId);
-        answer.setOwner(username);
-        answer.setEmail(email);
-        answer.setPoint(task.getPoint());
-        answer.setComment(comment);
-
-        answer.setTaskId(taskId);
-        answer.setTextAnswer(textAnswer);
-        answer.setTaskCategory(taskCategory);
-        answer.setTaskLevel(level);
-        answer.setTaskName(desc);
-        if (fl != null) {
-            answer.setAnswerFile(fl);
-            answer.setFileContent(bytes);
-        }
-        Answer newAnswer = answerService.save(answer);*/
-        Answer newAnswer = saveAnswer(newUser, task, fileId, fl, bytes, textAnswer, comment);
+        Answer newAnswer = saveAnswer(newUser, task, fileId, fl, bytes, textAnswer, comment, fileName);
 
         if (task2 != null) {
-            /*int taskId2 = task2.getId();
-            int level2 = task2.getOrder();
-            String taskCategory2 = task2.getTitle();
-            String desc2 = task2.getDescription();
-
-            Answer answer2 = new Answer();
-            answer2.setUserId(userId);
-            answer2.setOwner(username);
-            answer2.setEmail(email);
-            answer2.setPoint(task2.getPoint());
-            answer2.setComment(comment);
-
-            answer2.setTaskId(taskId2);
-            answer2.setTextAnswer(textAnswer);
-            answer2.setTaskCategory(taskCategory2);
-            answer2.setTaskLevel(level2);
-            answer2.setTaskName(desc2);
-            if (fl != null) {
-                answer2.setAnswerFile(fl);
-                answer2.setFileContent(bytes);
-            }
-
-            Answer newAnswer2 = answerService.save(answer2);
-            */
-
-            newAnswer = saveAnswer(newUser, task2, fileId, fl, bytes, textAnswer, comment);
+            newAnswer = saveAnswer(newUser, task2, fileId, fl, bytes, textAnswer, comment, fileName);
         }
 
         return newAnswer;
@@ -555,6 +535,8 @@ public class CommandLineAppStartupRunner {
                 String res[][] = new String[][]{new String[]{EmojiParser.parseToUnicode(competBtn), EmojiParser.parseToUnicode(commentBtn), EmojiParser.parseToUnicode(myResultBtn), EmojiParser.parseToUnicode(helpBtn)}};
                 showButtons(chatId, (msg + " :point_down:"), res);
                 return newUser;
+            } else {
+                return firstTaskRequest(chatId, newUser);
             }
         }
 
@@ -576,7 +558,9 @@ public class CommandLineAppStartupRunner {
 
     private User setFirstName(long chatId, User newUser, String clientName) {
         newUser.setTempAttr(client_full_name, clientName);
-        newUser.setPoints(150);
+        if (newUser.getPoints() == null || newUser.getPoints().intValue() <= 150)
+            newUser.setPoints(150);
+        newUser.setTlgFullname(clientName);
         newUser = changeProps(newUser);  //SECOND CHANGE
 
         String msg = getTextByCode("50_points"); // "Поздравляем, ты заработал 50 баллов";
@@ -621,6 +605,8 @@ public class CommandLineAppStartupRunner {
 
         com.pengrad.telegrambot.model.File file = getFileResponse.file();
 
+        //file.fileSize() ///?????????????????
+
         byte[] bytes = bot.getFileContent(file);
         String name = file.filePath().substring(file.filePath().indexOf("/") + 1);
         return Files.write(Paths.get(TEMP_FOLDER + name), bytes).toFile();
@@ -643,25 +629,7 @@ public class CommandLineAppStartupRunner {
             t.printStackTrace();
         }
 
-        /*
-        Answer answer = new Answer();
-        answer.setUserId(newUser.getId());
-        answer.setOwner(newUser.getUsername());
-        answer.setEmail(newUser.getEmail());
-        answer.setComment("first task complete screenshot");
-
-        answer.setTaskId(task.getId());
-        answer.setTaskCategory(task.getTitle());
-        answer.setTaskLevel(task.getOrder());
-        answer.setTaskName(task.getDescription());
-        answer.setPoint(points);
-        if (file2 != null) {
-            answer.setAnswerFile(file2);
-            answer.setFileContent(bytes);
-        }
-        Answer newAnswer = answerService.save(answer);
-        */
-        Answer newAnswer = saveAnswer(newUser, task, fileId, file, bytes, null, "first task complete screenshot");
+        Answer newAnswer = saveAnswer(newUser, task, fileId, file, bytes, null, "first task complete screenshot", null);
 
         int num = (int) tasksList.stream().filter(tsk -> tsk.getSameTaskId() != null && tsk.getSameTaskId().equals(task.getId())).count();
         if (num > 0) {
@@ -669,22 +637,7 @@ public class CommandLineAppStartupRunner {
                 Task task2 = tasksList.stream().filter(tsk -> tsk.getSameTaskId() != null && tsk.getSameTaskId().equals(task.getId())).collect(Collectors.toList()).get(i);
                 task2.setFinished(true);
 
-                /*Answer answer2 = new Answer();
-                answer2.setUserId(newUser.getId());
-                answer2.setOwner(newUser.getUsername());
-                answer2.setEmail(newUser.getEmail());
-                answer2.setComment("first task complete + automatic solved this task");
-
-                answer2.setTaskId(task2.getId());
-                answer2.setTaskCategory(task.getTitle());
-                answer2.setTaskLevel(task.getOrder());
-                answer2.setTaskName(task.getDescription());
-                answer2.setPoint(points);
-                if (file2 != null) {
-                    answer2.setAnswerFile(file2);
-                    answer2.setFileContent(bytes);
-                }*/
-                newAnswer = saveAnswer(newUser, task2, fileId, file, bytes, null, "first task complete + automatic solved this task");
+                newAnswer = saveAnswer(newUser, task2, fileId, file, bytes, null, "first task complete + automatic solved this task", null);
                 newUser.addTask(task2);
             }
         }
@@ -696,7 +649,7 @@ public class CommandLineAppStartupRunner {
         return newUser;
     }
 
-    private Answer saveAnswer(User newUser, Task task, String fileId, java.io.File file, byte[] bytes, String textAnswer, String comment) {
+    private Answer saveAnswer(User newUser, Task task, String fileId, java.io.File file, byte[] bytes, String textAnswer, String comment, String fileName) {
         Answer answer = new Answer();
         answer.setUserId(newUser.getId());
         answer.setOwner(newUser.getUsername());
@@ -710,6 +663,7 @@ public class CommandLineAppStartupRunner {
         answer.setTextAnswer(textAnswer);
         answer.setPoint(task.getPoint());
         answer.setTlgFileId(fileId);
+        answer.setFileOrigName(fileName);
         if (file != null) {
             answer.setAnswerFile(file);
             answer.setFileContent(bytes);
@@ -728,6 +682,8 @@ public class CommandLineAppStartupRunner {
 
         //Finished tasks
         List<Task> tasks = getFinishedTasks(newUser.getId());
+        newUser.setTasks(tasks);
+        newUser = checkUserInListEx(newUser);
 
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
@@ -740,8 +696,8 @@ public class CommandLineAppStartupRunner {
                         int rs = (int) tasks.stream().filter(tsk -> tsk.getOrder() != null && tsk.getOrder().equals(level) && tsk.getTitle().equals(name)).count();
                         if (rs > 0) {
                             /////for cache
-                            Task task = tasks.stream().filter(tsk -> tsk.getOrder() != null && tsk.getOrder().equals(level) && tsk.getTitle().equals(name)).collect(Collectors.toList()).get(0);
-                            newUser.addTask(task);
+                            //Task task = tasks.stream().filter(tsk -> tsk.getOrder() != null && tsk.getOrder().equals(level) && tsk.getTitle().equals(name)).collect(Collectors.toList()).get(0);
+                            //newUser.addTask(task);
                             ////
                             taskRes += ":green_heart:";
                         } else {
@@ -811,7 +767,7 @@ public class CommandLineAppStartupRunner {
             String txt = getTaskDescription(task);
 
             String desc = getTextByCode("task_finished"); //finished
-            sendEmojiText(chatId, desc + " :love_you_gesture:" + "\n\r\n\r" + txt);
+            sendEmojiText(chatId, ":white_check_mark: " + desc + " :white_check_mark:" + "\n\r\n\r" + txt);
             return user;
         }
 
@@ -962,6 +918,10 @@ public class CommandLineAppStartupRunner {
                 usersCache.put(user.getId(), user);
                 return user;
             }
+            if(!user.getTasks().isEmpty() && user.getTasks().size() > 0){
+                usersCache.put(user.getId(), user);
+                return user;
+            }
             return curUsr;
         }
 
@@ -972,7 +932,7 @@ public class CommandLineAppStartupRunner {
             }
         }
 
-        if (usersCache.get(user.getId()) == null)
+        if (user.getId() != null && usersCache.get(user.getId()) == null)
             usersCache.put(user.getId(), user);
 
         return user;
@@ -1022,9 +982,6 @@ public class CommandLineAppStartupRunner {
         }
 
         dbUser.setPassword("12345"); //TO-DO ???
-
-        //userList.remove(dbUser); //удалим старый
-        //userList.add(dbUser); //обновим новым
         usersCache.put(dbUser.getId(), dbUser);
 
         dbUser = userService.save(dbUser); //сохраним в БД

@@ -74,7 +74,8 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public Category getCategoryById(long id) {
         try {
-            HttpEntity<Category> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.GET, null, Category.class);
+            HttpEntity<Category> entity = new HttpEntity<>(null, httpHeadersUtil.getHttpHeadersJson());
+            HttpEntity<Category> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.GET, entity, Category.class);
             return response.getBody();
 
         } catch (Exception t) {

@@ -60,7 +60,8 @@ public class AnswerServiceImpl implements AnswerService {
             HttpEntity<Answer> response = restTemplate.exchange(urlMain + customUrl, HttpMethod.POST, requestEntity, Answer.class);
             return response.getBody();
         } catch (Exception t) {
-            logger.error(t.toString());
+            t.printStackTrace();
+            logger.error("ERROR: " + t.toString());
         }
         return null;
     }
@@ -74,7 +75,8 @@ public class AnswerServiceImpl implements AnswerService {
             return response.getBody();
 
         } catch (Exception t) {
-            logger.error(t.toString());
+            t.printStackTrace();
+            logger.error("ERROR: " + t.toString());
         }
         return null;
     }
@@ -99,6 +101,7 @@ public class AnswerServiceImpl implements AnswerService {
         form.put("task_name", answer.getTaskName());
         form.put("tlg_file_id", answer.getTlgFileId());
         form.put("task_id", answer.getTaskId());
+        form.put("file_orig_name", answer.getFileOrigName());
 
         String name = (answer.getAnswerFile() != null ? answer.getAnswerFile().getName() : null);
 
@@ -113,11 +116,13 @@ public class AnswerServiceImpl implements AnswerService {
     @Override
     public Answer getAnswerById(long id) {
         try {
-            HttpEntity<Answer> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.GET, null, Answer.class);
+            HttpEntity<Answer> entity = new HttpEntity<>(null, httpHeadersUtil.getHttpHeadersJson());
+            HttpEntity<Answer> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.GET, entity, Answer.class);
             return response.getBody();
 
         } catch (Exception t) {
-            logger.error(t.toString());
+            t.printStackTrace();
+            logger.error("ERROR: " + t.toString());
         }
         return null;
     }
@@ -132,7 +137,8 @@ public class AnswerServiceImpl implements AnswerService {
             List<Answer> list = response.getBody();
             return list;
         } catch (Exception t) {
-            logger.error(t.toString());
+            t.printStackTrace();
+            logger.error("ERROR: " + t.toString());
         }
         return null;
     }
@@ -141,7 +147,6 @@ public class AnswerServiceImpl implements AnswerService {
     public List<Answer> getAnswersByFilter(TaskFilter filter) {
         try {
             String params = formatCriteria(filter);
-
             HttpEntity<Answer> entity = new HttpEntity<>(null, httpHeadersUtil.getHttpHeadersJson());
             ResponseEntity<List<Answer>> response = restTemplate.exchange(urlMain + customUrl + "?" + params, HttpMethod.GET, entity, new ParameterizedTypeReference<List<Answer>>() {
             });
@@ -149,7 +154,8 @@ public class AnswerServiceImpl implements AnswerService {
             List<Answer> list = response.getBody();
             return list;
         } catch (Exception t) {
-            logger.error(t.toString());
+            t.printStackTrace();
+            logger.error("ERROR: " + t.toString());
         }
         return null;
     }
@@ -163,5 +169,4 @@ public class AnswerServiceImpl implements AnswerService {
 
         return String.format("user_id=%s&task_level=%s&task_category=%s&_sort=id:DESC", filter.getUser_id(), filter.getTask_level(), filter.getTask_category());
     }
-
 }

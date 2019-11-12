@@ -34,6 +34,7 @@ public class Task implements Serializable {
 
 
     @JsonProperty(value = "attachs")
+    @JsonIgnore
     private List<FileEx> attachments;
 
     @JsonIgnore

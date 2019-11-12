@@ -52,6 +52,7 @@ public class UserCommentServiceImpl implements UserCommentService {
             HttpEntity<UserComment> response = restTemplate.exchange(urlMain + customUrl, HttpMethod.POST, requestEntity, UserComment.class);
             return response.getBody();
         } catch (Exception t) {
+            t.printStackTrace();
             logger.error(t.toString());
         }
         return null;
@@ -66,6 +67,7 @@ public class UserCommentServiceImpl implements UserCommentService {
             return response.getBody();
 
         } catch (Exception t) {
+            t.printStackTrace();
             logger.error(t.toString());
         }
         return null;
@@ -74,10 +76,12 @@ public class UserCommentServiceImpl implements UserCommentService {
     @Override
     public UserComment getUserCommentById(long id) {
         try {
-            HttpEntity<UserComment> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.GET, null, UserComment.class);
+            HttpEntity<UserComment> requestEntity = new HttpEntity<>(null, httpHeadersUtil.getHttpHeadersJson());
+            HttpEntity<UserComment> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.GET, requestEntity, UserComment.class);
             return response.getBody();
 
         } catch (Exception t) {
+            t.printStackTrace();
             logger.error(t.toString());
         }
         return null;
@@ -93,10 +97,9 @@ public class UserCommentServiceImpl implements UserCommentService {
             List<UserComment> list = response.getBody();
             return list;
         } catch (Exception t) {
+            t.printStackTrace();
             logger.error(t.toString());
         }
         return null;
     }
-
-
 }

@@ -21,6 +21,7 @@ public class Answer implements Serializable {
     private String comment;
     private Integer point;
 
+
     @JsonProperty(value = "text_answer")
     private String textAnswer;
 
@@ -42,6 +43,9 @@ public class Answer implements Serializable {
     @JsonProperty(value = "tlg_file_id")
     private String tlgFileId;
 
+    @JsonProperty(value = "file_orig_name")
+    private String fileOrigName;
+
     @JsonProperty(value = "file_answer")
     private JsonNode fileAnswer;
 
@@ -52,7 +56,7 @@ public class Answer implements Serializable {
 
     }
 
-    public Answer(Integer id, String email, String owner, String comment, String textAnswer, String taskCategory, Integer userId, Integer taskId, Integer taskLevel, String taskName, String tlgFileId, Integer point, JsonNode fileAnswer) {
+    public Answer(Integer id, String email, String owner, String comment, String textAnswer, String taskCategory, Integer userId, Integer taskId, Integer taskLevel, String taskName, String tlgFileId, String fileOrigName, Integer point, JsonNode fileAnswer) {
         this.id = id;
         this.email = email;
         this.owner = owner;
@@ -64,6 +68,7 @@ public class Answer implements Serializable {
         this.taskLevel = taskLevel;
         this.taskName = taskName;
         this.tlgFileId = tlgFileId;
+        this.fileOrigName = fileOrigName;
         this.point = point;
         this.fileAnswer = fileAnswer;
     }
@@ -154,6 +159,14 @@ public class Answer implements Serializable {
 
     public void setTlgFileId(String tlgFileId) {
         this.tlgFileId = tlgFileId;
+    }
+
+    public String getFileOrigName() {
+        return fileOrigName;
+    }
+
+    public void setFileOrigName(String fileOrigName) {
+        this.fileOrigName = fileOrigName;
     }
 
     public Integer getPoint() {
