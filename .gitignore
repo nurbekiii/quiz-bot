@@ -29,3 +29,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+mvnw.cmd
+mvnw
+.mvn
+
+C:/Projects/
