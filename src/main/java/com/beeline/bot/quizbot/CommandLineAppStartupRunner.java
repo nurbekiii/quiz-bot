@@ -111,9 +111,6 @@ public class CommandLineAppStartupRunner {
     @Value("${tlg.local_temp.folder}")
     private String TEMP_FOLDER;
 
-    @Value("${rest.url_uploads}")
-    private String urlUploads;
-
     private TelegramBot bot;
 
     @PostConstruct
