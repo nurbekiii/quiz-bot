@@ -52,7 +52,8 @@ public class QuizTextServiceImpl implements QuizTextService {
             HttpEntity<QuizText> response = restTemplate.exchange(urlMain + customUrl, HttpMethod.POST, requestEntity, QuizText.class);
             return response.getBody();
         } catch (Exception t) {
-            logger.error(t.toString());
+            t.printStackTrace();
+            logger.error("ERROR: " + t.toString());
         }
         return null;
     }
@@ -65,7 +66,8 @@ public class QuizTextServiceImpl implements QuizTextService {
             HttpEntity<QuizText> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.PUT, requestEntity, QuizText.class);
             return response.getBody();
         } catch (Exception t) {
-            logger.error(t.toString());
+            t.printStackTrace();
+            logger.error("ERROR: " + t.toString());
         }
         return null;
     }
@@ -73,10 +75,12 @@ public class QuizTextServiceImpl implements QuizTextService {
     @Override
     public QuizText getUserById(long id) {
         try {
-            HttpEntity<QuizText> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.GET, null, QuizText.class);
+            HttpEntity<QuizText> entity = new HttpEntity<>(null, httpHeadersUtil.getHttpHeadersJson());
+            HttpEntity<QuizText> response = restTemplate.exchange(urlMain + customUrl + id, HttpMethod.GET, entity, QuizText.class);
             return response.getBody();
         } catch (Exception t) {
-            logger.error(t.toString());
+            t.printStackTrace();
+            logger.error("ERROR: " + t.toString());
         }
         return null;
     }
@@ -91,7 +95,8 @@ public class QuizTextServiceImpl implements QuizTextService {
             List<QuizText> list = response.getBody();
             return list;
         } catch (Exception t) {
-            logger.error(t.toString());
+            t.printStackTrace();
+            logger.error("ERROR: " + t.toString());
         }
         return null;
     }
