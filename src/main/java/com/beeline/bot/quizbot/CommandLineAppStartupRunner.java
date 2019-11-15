@@ -16,6 +16,7 @@ import com.pengrad.telegrambot.request.SendPhoto;
 import com.pengrad.telegrambot.response.GetFileResponse;
 import com.pengrad.telegrambot.response.SendResponse;
 import com.vdurmont.emoji.EmojiParser;
+import okhttp3.OkHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -111,6 +114,12 @@ public class CommandLineAppStartupRunner {
     @Value("${tlg.local_temp.folder}")
     private String TEMP_FOLDER;
 
+    @Value("${proxy.host}")
+    private String proxyHost;
+
+    @Value("${proxy.port}")
+    private int proxyPort;
+
     private TelegramBot bot;
 
     @PostConstruct
@@ -146,11 +155,14 @@ public class CommandLineAppStartupRunner {
             Pattern pattern = Pattern.compile(EmojiParser.parseToUnicode(cat.getCode() + " " + cat.getTitle()) + " (\\(\\d{2}|d{3})\\%\\)");
             buttonsPattern.add(pattern);
         }
-
     }
 
     @EventListener
     public void onApplicationEvent(ContextRefreshedEvent event) {
+        //Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyHost, proxyPort));
+        //OkHttpClient client = new OkHttpClient.Builder().proxy(proxy).build();
+        //bot = new TelegramBot.Builder(BOT_TOKEN).okHttpClient(client).build();
+
         bot = new TelegramBot(BOT_TOKEN);
         // Register for updates
         bot.setUpdatesListener(updates -> {
@@ -915,7 +927,7 @@ public class CommandLineAppStartupRunner {
                 usersCache.put(user.getId(), user);
                 return user;
             }
-            if(!user.getTasks().isEmpty() && user.getTasks().size() > 0){
+            if (!user.getTasks().isEmpty() && user.getTasks().size() > 0) {
                 usersCache.put(user.getId(), user);
                 return user;
             }
