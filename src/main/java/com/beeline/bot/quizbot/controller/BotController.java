@@ -29,8 +29,5 @@ public class BotController {
         System.out.println("User" + usr.toString());
 
         return "OK";
-
-        //String ss = "940004167:AAH7DbyZ6H4bJDrp6jx8aMdpWcVXlg804nM";
     }
-
 }
