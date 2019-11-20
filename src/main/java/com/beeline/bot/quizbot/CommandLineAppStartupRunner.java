@@ -16,7 +16,6 @@ import com.pengrad.telegrambot.request.SendPhoto;
 import com.pengrad.telegrambot.response.GetFileResponse;
 import com.pengrad.telegrambot.response.SendResponse;
 import com.vdurmont.emoji.EmojiParser;
-import okhttp3.OkHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,8 +25,6 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -73,6 +70,7 @@ public class CommandLineAppStartupRunner {
     private final String BTN_BACK = ":point_left: Назад";
 
     private List<Pattern> buttonsPattern;
+    List<String> allowedImageMymes = new ArrayList<>(Arrays.asList("image/png", "image/jpeg", "image/jpg", "image/svg+xml", "image/bmp", "image/gif", "image/tiff", "image/x-xbitmap"));
 
     private List<QuizText> textsList;
     private List<Task> tasksList;
@@ -114,18 +112,18 @@ public class CommandLineAppStartupRunner {
     @Value("${tlg.local_temp.folder}")
     private String TEMP_FOLDER;
 
+    /*
     @Value("${proxy.host}")
     private String proxyHost;
 
     @Value("${proxy.port}")
-    private int proxyPort;
+    private int proxyPort;*/
 
     private TelegramBot bot;
 
     @PostConstruct
     public void init() {
         usersCache = new HashMap<>();
-        //userList = new ArrayList<>();
 
         textsList = quizTextService.getAll();
         categoriesList = categoryService.getAll();
@@ -133,7 +131,7 @@ public class CommandLineAppStartupRunner {
         tasksList = taskService.getAll();
         tasksList.sort(Comparator.comparing(Task::getTitle).thenComparing(Comparator.comparing(Task::getId)));
 
-        String[] res = getTextByCodes(new String[]{"quiz_btn1", "quiz_btn2", "quiz_btn3", "quiz_btn4", "quiz_btn5", "quiz_btn6", "quiz_btn7", "quiz_btn8", "quiz_btn9"}).toArray(new String[0]);
+        //String[] res = getTextByCodes(new String[]{"quiz_btn1", "quiz_btn2", "quiz_btn3", "quiz_btn4", "quiz_btn5", "quiz_btn6", "quiz_btn7", "quiz_btn8", "quiz_btn9"}).toArray(new String[0]);
         //кнопки
         QUIZ_BTN1 = EmojiParser.parseToUnicode(getCategoryById(1).getCode() + " " + getCategoryById(1).getTitle()); //res[0];
         QUIZ_BTN2 = EmojiParser.parseToUnicode(getCategoryById(2).getCode() + " " + getCategoryById(2).getTitle()); //res[1];
@@ -196,7 +194,7 @@ public class CommandLineAppStartupRunner {
                                     newUser = setFirstName(chatId, newUser, message.text());
                                 } else if (/*newUser.getTempAttr(client_full_name) != null &&*/ repMessId.equals(newUser.getTempAttr(task1_message_id))) {
                                     //error in first task
-                                    if (message.photo() == null && (message.text() != null || message.document() != null)) {
+                                    /*if (message.photo() == null && (message.text() != null || message.document() != null)) {
                                         String msg = getTextByCode("answer_format_error");
                                         sendEmojiText(chatId, msg + ":scream:");
                                         newUser = firstTaskRequest(chatId, newUser);
@@ -204,7 +202,8 @@ public class CommandLineAppStartupRunner {
                                         //first task
                                         PhotoSize[] sizes = message.photo();
                                         newUser = sendFirstTask(chatId, newUser, sizes[0].fileId());
-                                    }
+                                    }*/
+                                    newUser = handleFirstAnswer(chatId, newUser, message);
                                 } else if (repMessId.equals(newUser.getTempAttr(input_comment_message_id))) {
                                     //comment save
                                     setComment(chatId, newUser, message.text());
@@ -290,6 +289,7 @@ public class CommandLineAppStartupRunner {
                             LOG.info(chat.toString());
                             LOG.info(text != null ? text : "");
                             LOG.info(message.messageId().toString());
+                            LOG.info("FILE_ID: "+(message.photo() != null ? message.photo()[0].fileId() : ""));
                             LOG.info("---------------");
                         }
                     }
@@ -302,6 +302,28 @@ public class CommandLineAppStartupRunner {
             }
             return UpdatesListener.CONFIRMED_UPDATES_ALL;
         });
+    }
+
+    private User handleFirstAnswer(long chatId, User newUser, Message message) {
+
+        Document doc = message.document();
+        boolean docHasImage = false;
+        if (doc != null) {
+            String myme = doc.mimeType();
+            docHasImage = (myme != null && allowedImageMymes.contains(myme));
+        }
+
+        if (message.photo() == null && (message.text() != null || !docHasImage)) {
+            String msg = getTextByCode("answer_format_error");
+            sendEmojiText(chatId, msg + ":scream:");
+            newUser = firstTaskRequest(chatId, newUser);
+        } else {
+            //first task
+            PhotoSize[] sizes = message.photo();
+            String fileId = (docHasImage ? doc.fileId() : sizes[0].fileId());
+            newUser = sendFirstTask(chatId, newUser, fileId);
+        }
+        return newUser;
     }
 
     private User drawTaskButtons(Long chatId, User newUser, String title) {
@@ -394,7 +416,7 @@ public class CommandLineAppStartupRunner {
             hasDoc = resultTypes.contains("video");
         }
 
-        if (sizes != null || sticker != null) {
+        if (sizes != null || sticker != null || (doc != null && allowedImageMymes.contains(doc.mimeType()))) {
             hasPhoto = resultTypes.contains("picture") || resultTypes.contains("sticker");
         }
 
