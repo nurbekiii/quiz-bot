@@ -392,6 +392,7 @@ public class CommandLineAppStartupRunner {
         Sticker sticker = message.sticker();
         Animation animation = message.animation();
         PhotoSize sizes[] = message.photo();
+        VideoNote videoNote = message.videoNote();
 
         Task task = (newUser.getTasks().get(newUser.getTasks().size() - 1));
 
@@ -412,7 +413,7 @@ public class CommandLineAppStartupRunner {
             hasDoc = resultTypes.contains("voice message");
         }
 
-        if (video != null || animation != null) {
+        if (video != null || animation != null || videoNote != null) {
             hasDoc = resultTypes.contains("video");
         }
 
@@ -449,7 +450,7 @@ public class CommandLineAppStartupRunner {
         } else if (video != null) {
             fileId = video.fileId();
             size = video.fileSize();
-            //fileName = doc.fileName(); //?????
+            //fileName = video.fileName(); //?????
         } else if (animation != null) {
             fileId = animation.fileId();
             size = animation.fileSize();
@@ -458,6 +459,10 @@ public class CommandLineAppStartupRunner {
             fileId = sticker.fileId();
             size = sticker.fileSize();
             fileName = sticker.setName();
+        }else if (videoNote != null) {
+            fileId = videoNote.fileId();
+            size = videoNote.fileSize();
+            //fileName = videoNote.fileName(); //?????
         }
         int sizes1 = (int) (size / 1024);
         if (sizes1 > 100000) {
