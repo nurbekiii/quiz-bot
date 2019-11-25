@@ -866,7 +866,7 @@ public class CommandLineAppStartupRunner {
 
     private void showHelpMessage(long chatId) {
         String mess = getTextByCode("help_btn");
-        sendEmojiText(chatId, mess + ":ambulance:");
+        sendEmojiText(chatId, mess);
     }
 
     private void showMyResult(long chatId, User newUser) {
