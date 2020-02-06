@@ -130,8 +130,6 @@ public class CommandLineAppStartupRunner {
 
         tasksList = taskService.getAll();
         tasksList.sort(Comparator.comparing(Task::getTitle).thenComparing(Comparator.comparing(Task::getId)));
-
-        //String[] res = getTextByCodes(new String[]{"quiz_btn1", "quiz_btn2", "quiz_btn3", "quiz_btn4", "quiz_btn5", "quiz_btn6", "quiz_btn7", "quiz_btn8", "quiz_btn9"}).toArray(new String[0]);
         //кнопки
         QUIZ_BTN1 = EmojiParser.parseToUnicode(getCategoryById(1).getCode() + " " + getCategoryById(1).getTitle()); //res[0];
         QUIZ_BTN2 = EmojiParser.parseToUnicode(getCategoryById(2).getCode() + " " + getCategoryById(2).getTitle()); //res[1];
@@ -168,6 +166,7 @@ public class CommandLineAppStartupRunner {
                 if (updates != null) {
                     for (Update update : updates) {
                         Message message = update.message();
+                        boolean MESSAGE_HANDLED = false;
                         if (message != null) {
                             String text = message.text();
                             long chatId = update.message().chat().id();
@@ -188,21 +187,13 @@ public class CommandLineAppStartupRunner {
                             //ответы на вопросы
                             if (message.replyToMessage() != null) {
                                 Integer repMessId = message.replyToMessage().messageId();
+                                MESSAGE_HANDLED = true;
 
                                 if (newUser.getTempAttr(client_full_name) == null && repMessId.equals(newUser.getTempAttr(ask_name_message_id))) {
                                     //first name
                                     newUser = setFirstName(chatId, newUser, message.text());
-                                } else if (/*newUser.getTempAttr(client_full_name) != null &&*/ repMessId.equals(newUser.getTempAttr(task1_message_id))) {
+                                } else if (repMessId.equals(newUser.getTempAttr(task1_message_id))) {
                                     //error in first task
-                                    /*if (message.photo() == null && (message.text() != null || message.document() != null)) {
-                                        String msg = getTextByCode("answer_format_error");
-                                        sendEmojiText(chatId, msg + ":scream:");
-                                        newUser = firstTaskRequest(chatId, newUser);
-                                    } else {
-                                        //first task
-                                        PhotoSize[] sizes = message.photo();
-                                        newUser = sendFirstTask(chatId, newUser, sizes[0].fileId());
-                                    }*/
                                     newUser = handleFirstAnswer(chatId, newUser, message);
                                 } else if (repMessId.equals(newUser.getTempAttr(input_comment_message_id))) {
                                     //comment save
@@ -223,6 +214,7 @@ public class CommandLineAppStartupRunner {
                                 switch (text) {
                                     case "/start":
                                         newUser = startAction(chatId, newUser);
+                                        MESSAGE_HANDLED = true;
                                         break;
                                 }
 
@@ -231,11 +223,13 @@ public class CommandLineAppStartupRunner {
                                     String text2 = text.substring(0, text.indexOf("[") - 1);
                                     if (quizButtonsList.contains(text2)) {
                                         newUser = drawTaskButtons(chatId, newUser, text2);
+                                        MESSAGE_HANDLED = true;
                                     }
                                 }
 
                                 if (quizButtonsList.contains(text)) {
                                     newUser = drawTaskButtons(chatId, newUser, text);
+                                    MESSAGE_HANDLED = true;
                                 }
 
                                 //кнопки
@@ -244,30 +238,35 @@ public class CommandLineAppStartupRunner {
                                 switch (parsedEmoji) {
                                     case helpBtn:
                                         showHelpMessage(chatId);
+                                        MESSAGE_HANDLED = true;
                                         break;
 
                                     case myResultBtn:
                                         showMyResult(chatId, newUser);
+                                        MESSAGE_HANDLED = true;
                                         break;
 
                                     case competBtn:
                                         newUser = senQuizSelect(chatId, newUser);
+                                        MESSAGE_HANDLED = true;
                                         break;
 
                                     case commentBtn:
                                         newUser = inputCommentRequest(chatId, newUser);
+                                        MESSAGE_HANDLED = true;
                                         break;
 
                                     case BTN_BACK:
-                                        if (newUser.getTempAttr(titleEx) != null)
+                                        if (newUser.getTempAttr(titleEx) != null) {
                                             newUser = drawTaskButtons(chatId, newUser, newUser.getTempAttr(titleEx).toString());
+                                            MESSAGE_HANDLED = true;
+                                        }
                                         break;
 
                                     case BTN_ANSWER:
                                         newUser = askInputAnswer(chatId, newUser);
+                                        MESSAGE_HANDLED = true;
                                         break;
-
-                                    //default:  botMissUndestand(chatId);   break;
                                 }
 
                                 String clearedText = getClearText(text, true);
@@ -275,23 +274,26 @@ public class CommandLineAppStartupRunner {
                                     switch (clearedText) {
                                         case BTN_TASK1:
                                             newUser = handleButtonTaskNew(chatId, newUser, newUser.getTempAttr(titleEx).toString(), 1);//FIFTH CHANGE
+                                            MESSAGE_HANDLED = true;
                                             break;
                                         case BTN_TASK2:
                                             newUser = handleButtonTaskNew(chatId, newUser, newUser.getTempAttr(titleEx).toString(), 2);//FIFTH CHANGE
+                                            MESSAGE_HANDLED = true;
                                             break;
                                         case BTN_TASK3:
                                             newUser = handleButtonTaskNew(chatId, newUser, newUser.getTempAttr(titleEx).toString(), 3);//FIFTH CHANGE
+                                            MESSAGE_HANDLED = true;
                                             break;
                                     }
                                 }
                             }
-                            LOG.info("---------------");
-                            LOG.info(chat.toString());
-                            LOG.info(text != null ? text : "");
-                            LOG.info(message.messageId().toString());
-                            LOG.info("FILE_ID: "+(message.photo() != null ? message.photo()[0].fileId() : ""));
-                            LOG.info("---------------");
+
+                            if (!MESSAGE_HANDLED) {
+                                botMissUndestand(chatId);
+                            }
                         }
+
+                        printMessage(message);
                     }
                 }
                 // return id of last processed update or confirm them all
@@ -302,6 +304,18 @@ public class CommandLineAppStartupRunner {
             }
             return UpdatesListener.CONFIRMED_UPDATES_ALL;
         });
+    }
+
+    private void printMessage(Message message) {
+        if (message == null)
+            return;
+
+        LOG.info("---------------");
+        LOG.info(message.chat().toString());
+        LOG.info(message.text() != null ? message.text() : "");
+        LOG.info(message.messageId().toString());
+        LOG.info("FILE_ID: " + (message.photo() != null ? message.photo()[0].fileId() : ""));
+        LOG.info("---------------");
     }
 
     private User handleFirstAnswer(long chatId, User newUser, Message message) {
@@ -459,7 +473,7 @@ public class CommandLineAppStartupRunner {
             fileId = sticker.fileId();
             size = sticker.fileSize();
             fileName = sticker.setName();
-        }else if (videoNote != null) {
+        } else if (videoNote != null) {
             fileId = videoNote.fileId();
             size = videoNote.fileSize();
             //fileName = videoNote.fileName(); //?????
@@ -641,8 +655,6 @@ public class CommandLineAppStartupRunner {
 
         com.pengrad.telegrambot.model.File file = getFileResponse.file();
 
-        //file.fileSize() ///?????????????????
-
         byte[] bytes = bot.getFileContent(file);
         String name = file.filePath().substring(file.filePath().indexOf("/") + 1);
         return Files.write(Paths.get(TEMP_FOLDER + name), bytes).toFile();
@@ -704,6 +716,7 @@ public class CommandLineAppStartupRunner {
             answer.setAnswerFile(file);
             answer.setFileContent(bytes);
         }
+        LOG.info(answer.toString());
         Answer newAnswer = answerService.save(answer);
         return newAnswer;
     }
@@ -731,10 +744,6 @@ public class CommandLineAppStartupRunner {
                         final int level = k;
                         int rs = (int) tasks.stream().filter(tsk -> tsk.getOrder() != null && tsk.getOrder().equals(level) && tsk.getTitle().equals(name)).count();
                         if (rs > 0) {
-                            /////for cache
-                            //Task task = tasks.stream().filter(tsk -> tsk.getOrder() != null && tsk.getOrder().equals(level) && tsk.getTitle().equals(name)).collect(Collectors.toList()).get(0);
-                            //newUser.addTask(task);
-                            ////
                             taskRes += ":green_heart:";
                         } else {
                             taskRes += ":yellow_heart:";
@@ -795,7 +804,6 @@ public class CommandLineAppStartupRunner {
             user.setTasks(tasksList);
         }
         Task task = getTaskByTitleLevel(title1, lev);
-        String description = task.getDescription();
 
         int fin = (int) user.getTasks().stream().filter(tsk -> tsk.getTitle().equals(title1) && tsk.getOrder().intValue() == lev && tsk.isFinished()).count();
         if (fin > 0) {
@@ -803,6 +811,7 @@ public class CommandLineAppStartupRunner {
             String txt = getTaskDescription(task);
 
             String desc = getTextByCode("task_finished"); //finished
+            LOG.info("desc: " + (desc == null ? "null": desc) + ", txt: " + (txt == null ? "null": txt));
             sendEmojiText(chatId, ":white_check_mark: " + desc + " :white_check_mark:" + "\n\r\n\r" + txt);
             return user;
         }
@@ -931,7 +940,7 @@ public class CommandLineAppStartupRunner {
         user.setUsername(user.getTlgUsername() != null ? user.getTlgUsername() : user.getTlgFirstname());
         user.setEmail((user.getTlgUsername() != null ? user.getTlgUsername() : "xyz") + System.currentTimeMillis() + "@mail.xxx");
         user.setPassword("12345");
-
+        LOG.info("SAVING USER1: " + user.toString());
         return userService.save(user);
     }
 
@@ -1020,6 +1029,8 @@ public class CommandLineAppStartupRunner {
         dbUser.setPassword("12345"); //TO-DO ???
         usersCache.put(dbUser.getId(), dbUser);
 
+        LOG.info(dbUser.toString());
+        LOG.info("SAVING USER2: " + dbUser.toString());
         dbUser = userService.save(dbUser); //сохраним в БД
         ///
         dbUser.setTempAttr(user.getTempAttr());

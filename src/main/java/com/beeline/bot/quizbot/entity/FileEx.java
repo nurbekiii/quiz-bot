@@ -32,9 +32,6 @@ public class FileEx implements Serializable {
     private String size;
 
     @JsonIgnore
-    private String public_id;
-
-    @JsonIgnore
     @JsonProperty(value = "created_at")
     private LocalDateTime createdAt;
 
@@ -46,7 +43,7 @@ public class FileEx implements Serializable {
 
     }
 
-    public FileEx(Long id, String name, String ext, String mime, String url, String sha256, String provider, String size, String public_id, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public FileEx(Long id, String name, String ext, String mime, String url, String sha256, String provider, String size, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.name = name;
         this.ext = ext;
@@ -55,7 +52,6 @@ public class FileEx implements Serializable {
         this.sha256 = sha256;
         this.provider = provider;
         this.size = size;
-        this.public_id = public_id;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -138,13 +134,5 @@ public class FileEx implements Serializable {
 
     public void setSize(String size) {
         this.size = size;
-    }
-
-    public String getPublic_id() {
-        return public_id;
-    }
-
-    public void setPublic_id(String public_id) {
-        this.public_id = public_id;
     }
 }

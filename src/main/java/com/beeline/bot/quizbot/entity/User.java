@@ -214,4 +214,20 @@ public class User implements Serializable {
         result = 31 * result + (tlgUsername != null ? tlgUsername.hashCode() : 0);
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", email='" + email + '\'' +
+                ", points=" + points +
+                ", password='" + password + '\'' +
+                ", tlgId=" + tlgId +
+                ", tlgUsername='" + tlgUsername + '\'' +
+                ", tlgFirstname='" + tlgFirstname + '\'' +
+                ", tlgLastname='" + tlgLastname + '\'' +
+                ", tlgFullname='" + tlgFullname + '\'' +
+                '}';
+    }
 }

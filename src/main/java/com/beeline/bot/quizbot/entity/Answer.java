@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 import java.io.File;
 import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  * @author NIsaev on 03.10.2019
@@ -199,5 +200,27 @@ public class Answer implements Serializable {
 
     public void setAnswerFile(File answerFile) {
         this.answerFile = answerFile;
+    }
+
+    @Override
+    public String toString() {
+        return "Answer{" +
+                "id=" + id +
+                ", email='" + email + '\'' +
+                ", owner='" + owner + '\'' +
+                ", comment='" + comment + '\'' +
+                ", point=" + point +
+                ", textAnswer='" + textAnswer + '\'' +
+                ", taskCategory='" + taskCategory + '\'' +
+                ", userId=" + userId +
+                ", taskId=" + taskId +
+                ", taskLevel=" + taskLevel +
+                ", taskName='" + taskName + '\'' +
+                ", tlgFileId='" + tlgFileId + '\'' +
+                ", fileOrigName='" + fileOrigName + '\'' +
+                ", fileAnswer=" + fileAnswer +
+                ", fileContent=" + Arrays.toString(fileContent) +
+                ", answerFile=" + answerFile +
+                '}';
     }
 }

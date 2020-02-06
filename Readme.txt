@@ -24,10 +24,10 @@ docker container stop "quiz-bot:latest"
 
   2. BUILD Image
 
-  docker build -t gitlab.beeline.kg:4567/competencecup/quiz-bot .
+  docker build -t gitlab.XXX.com:4567/quiz-bot .
 
   3. PUSH Image
 
-  docker push gitlab.beeline.kg:4567/competencecup/quiz-bot
+  docker push gitlab.XXX.com:4567/quiz-bot
 ---------------------------------------------------------------------------------------
 

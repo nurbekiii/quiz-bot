@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * @author NIsaev on 02.10.2019
  */
-@JsonIgnoreProperties(ignoreUnknown = true, value = {"created_at", "updated_at"})
+@JsonIgnoreProperties(ignoreUnknown = true, value = {"created_at", "updated_at", "attachs"})
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 public class Task implements Serializable {
     private Integer id;
@@ -32,11 +32,6 @@ public class Task implements Serializable {
     @JsonProperty(value = "file_type")
     private String fileType;
 
-
-    @JsonProperty(value = "attachs")
-    @JsonIgnore
-    private List<FileEx> attachments;
-
     @JsonIgnore
     private boolean isFinished;
 
@@ -44,7 +39,7 @@ public class Task implements Serializable {
 
     }
 
-    public Task(Integer id, String title, String description, String code, String result, Integer order, Integer point, Integer sameTaskId, String fileId, String fileType, List<FileEx> attachments, boolean isFinished) {
+    public Task(Integer id, String title, String description, String code, String result, Integer order, Integer point, Integer sameTaskId, String fileId, String fileType, boolean isFinished) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -55,7 +50,6 @@ public class Task implements Serializable {
         this.sameTaskId = sameTaskId;
         this.fileId = fileId;
         this.fileType = fileType;
-        this.attachments = attachments;
         this.isFinished = isFinished;
     }
 
@@ -147,14 +141,6 @@ public class Task implements Serializable {
         this.sameTaskId = sameTaskId;
     }
 
-    public List<FileEx> getAttachments() {
-        return attachments;
-    }
-
-    public void setAttachments(List<FileEx> attachments) {
-        this.attachments = attachments;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -173,5 +159,22 @@ public class Task implements Serializable {
         result = 31 * result + (title != null ? title.hashCode() : 0);
         result = 31 * result + (code != null ? code.hashCode() : 0);
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "Task{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", description='" + description + '\'' +
+                ", code='" + code + '\'' +
+                ", result='" + result + '\'' +
+                ", order=" + order +
+                ", point=" + point +
+                ", sameTaskId=" + sameTaskId +
+                ", fileId='" + fileId + '\'' +
+                ", fileType='" + fileType + '\'' +
+                ", isFinished=" + isFinished +
+                '}';
     }
 }
